@@ -96,6 +96,7 @@ The codec ships as importable ES modules in `src/`, with no build step. The
 **renderer** (string to pixels) and **encoder** (image to string) are separate:
 a page that only displays strings imports `imgoji/render` and pulls in no
 encoder or glyph-atlas code. The public API is JSDoc-annotated in the source.
+Regenerate the API reference (TypeDoc) with `bun run docs:api`.
 
 ### Put a viewer on your page
 
@@ -138,7 +139,7 @@ import { Renderer } from 'imgoji/render';   // pulls in no encoder code
 const r = new Renderer();
 r.decode(string, ctx);                        // codec BFS string onto a 2D context
 r.decode(string, ctx, 256, { prefix: 0.5 });  // render half the stream
-r.scene(dslString, ctx);                       // DSL composition (positioned sprites)
+r.decode('🌍r0 🚀x4y2', ctx);          // DSL composition (r0 renders the leading glyph as a picture)
 ```
 
 ### Encode (image to string)

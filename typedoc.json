@@ -1,0 +1,10 @@
+{
+  "entryPoints": ["src/index.js"],
+  "tsconfig": "tsconfig.docs.json",
+  "out": "docs/api-typedoc",
+  "excludeNotDocumented": true,
+  "excludePrivate": true,
+  "cleanOutputDir": true,
+  "customCss": "docs/typedoc-theme.css",
+  "customJs": "docs/typedoc-header.js"
+}

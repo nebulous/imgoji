@@ -13,14 +13,30 @@
   "main": "./src/index.js",
   "module": "./src/index.js",
   "browser": "./src/index.js",
-  "files": ["src", "assets", "README.md", "FORMAT.md"],
+  "files": [
+    "src",
+    "assets",
+    "README.md",
+    "FORMAT.md"
+  ],
   "scripts": {
-    "test": "node test/viewer.test.mjs && node test/encode.test.mjs && node test/docs.test.mjs"
+    "test": "bun test/viewer.test.mjs && bun test/encode.test.mjs && bun test/docs.test.mjs",
+    "docs:api": "typedoc"
   },
-  "keywords": ["emoji", "image", "codec", "quadtree", "image-encoding"],
+  "keywords": [
+    "emoji",
+    "image",
+    "codec",
+    "quadtree",
+    "image-encoding"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.20",
+    "typescript": "^6.0.3"
   }
 }

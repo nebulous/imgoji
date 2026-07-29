@@ -125,6 +125,11 @@ http(s). The package is not on a CDN or npm yet. Copy the files from `src/`.
 
 The `.value` property holds the string. Setting it re-renders.
 
+Size it with CSS like any element (`width`, `height`). The viewer renders to match
+its displayed size and re-renders on resize, so it stays as sharp as the system
+emoji font allows. The codec image is square. A non-square box stretches it,
+which is intended.
+
 ### Render (display only)
 
 ```js

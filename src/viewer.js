@@ -1,4 +1,4 @@
-// <imgoji-viewer> — drop-in element that renders an imgoji string to a canvas.
+// <imgoji-viewer>: drop-in element that renders an imgoji string to a canvas.
 // Full API in the class JSDoc below.
 
 import { Renderer } from './render.js';
@@ -10,9 +10,10 @@ const MAX_RES = 2048;   // cap on internal render resolution (memory); otherwise
  * Drop-in custom element that renders an imgoji string to a canvas.
  *
  * The string is the element's text content: inline, copyable, and it degrades to
- * plain text without JavaScript. The canvas renders at the host's display size
- * (× devicePixelRatio), re-rendering on resize, so output is as sharp as the
- * system emoji font allows — not fixed to 256.
+ * plain text without JavaScript. The canvas renders to match the host's display
+ * size (× devicePixelRatio) and re-renders on resize, so output is as sharp as
+ * the system emoji font allows. The codec image is square. A non-square host
+ * stretches it by design.
  *
  * Register once (the module side-effect defines the element):
  *   <script type="module" src="imgoji/viewer.js"></script>

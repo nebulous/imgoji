@@ -13,7 +13,7 @@
   "main": "./src/index.js",
   "module": "./src/index.js",
   "browser": "./src/index.js",
-  "files": ["src", "public", "README.md", "FORMAT.md"],
+  "files": ["src", "assets", "README.md", "FORMAT.md"],
   "scripts": {
     "test": "node test/viewer.test.mjs && node test/encode.test.mjs && node test/docs.test.mjs"
   },

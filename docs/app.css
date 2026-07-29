@@ -43,7 +43,6 @@ input, select, textarea { font: inherit; color: inherit; }
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-#bgscene { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; opacity: var(--bg-scene-opacity, 0.2); pointer-events: none; }
 .container { width: 100%; max-width: 720px; margin-inline: auto; padding-inline: 20px; }
 
 /* ---------- header ---------- */

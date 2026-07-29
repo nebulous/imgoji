@@ -4,7 +4,7 @@
 //   - grid:   Encoder.rasterize(image, { cols, rows }) -> flat emoji grid
 //
 // Serve from the repo root so ../src/index.js and ../assets/emoji-list.js resolve.
-import { Encoder, Renderer, splitGraphemes, rleExpand, encodePrefix } from '../src/index.js';
+import { Encoder, splitGraphemes, rleExpand, encodePrefix } from '../src/index.js';
 import { SemanticGrid } from '../src/semantic-grid.js';
 
 const $ = (id) => document.getElementById(id);
@@ -428,30 +428,8 @@ function copyText(text, btn) {
   else done();
 }
 
-// Live background: render an imgoji scene at the viewport size and re-render on
-// resize, so the page itself demonstrates the codec's resolution independence.
-const BG_SCENE = '🟨🖼️🌞🌈💐🌻-☁️-5☁️🪁s2x81🛩️s2y6x2👫s2x8y9🎩s3rFxCy6';
-let _bg = null;
-function renderBg() {
-  const c = document.getElementById('bgscene');
-  if (!c) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const S = Math.min(2048, Math.ceil(Math.max(vw, vh) * dpr));
-  if (!_bg) _bg = { r: new Renderer(), off: document.createElement('canvas') };
-  _bg.off.width = _bg.off.height = S;
-  const octx = _bg.off.getContext('2d');
-  _bg.r.decode(BG_SCENE, octx, S);                       // square render at viewport scale
-  c.width = Math.round(vw * dpr); c.height = Math.round(vh * dpr);
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, c.width, c.height);
-  let sw = S, sh = S, sx = 0, sy = 0;                  // center-crop square to viewport aspect
-  if (vw / vh > 1) { sh = S / (vw / vh); sy = (S - sh) / 2; } else { sw = S * (vw / vh); sx = (S - sw) / 2; }
-  ctx.drawImage(_bg.off, sx, sy, sw, sh, 0, 0, c.width, c.height);
-}
-let _bgRaf = 0;
-window.addEventListener('resize', () => { cancelAnimationFrame(_bgRaf); _bgRaf = requestAnimationFrame(renderBg); });
-fontsReady.then(renderBg);
+// Render the view-tab default string once the emoji font is ready.
+fontsReady.then(() => { const v = $('renderInput').value.trim(); if (v) setRender(v); });
 
 function init() {
   // tabs

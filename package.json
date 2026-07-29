@@ -1,0 +1,26 @@
+{
+  "name": "imgoji",
+  "version": "1.0.0",
+  "description": "Render emoji strings as images: a drop-in, asset-free web component and matching encoder.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./render": "./src/render.js",
+    "./viewer": "./src/viewer.js",
+    "./glyph": "./src/glyph.js",
+    "./util": "./src/util.js"
+  },
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "browser": "./src/index.js",
+  "files": ["src", "public", "README.md", "FORMAT.md"],
+  "scripts": {
+    "test": "node test/viewer.test.mjs && node test/encode.test.mjs && node test/docs.test.mjs"
+  },
+  "keywords": ["emoji", "image", "codec", "quadtree", "image-encoding"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}

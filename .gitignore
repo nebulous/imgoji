@@ -1,0 +1,22 @@
+# Dependencies
+/node_modules/
+
+# NebFlow private state. Keep this directory local; it is not committed by default.
+# To share workflow state with collaborators, remove this line and commit deliberately.
+/private/
+
+# Local HTTPS dev certs (mkcert) — never commit private keys
+/.certs/
+
+# Dev experiment scripts (scratch; the paper's figures are baked into docs/paper.html)
+/measure/
+
+# Standalone dev tools (CLIP/OWL-ViT scratchpad, semantic-grid dev harness)
+/classify.html
+/grid-ab.html
+
+# AI-agent workflow guidance (local NebFlow pointers; not for the public repo)
+/AGENTS.md
+
+# macOS Finder metadata
+.DS_Store

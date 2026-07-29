@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><body>
+<script type="module" src="../src/viewer.js"></script>
+<canvas id="c1" width="256" height="256"></canvas>
+<imgoji-viewer id="v"></imgoji-viewer>
+<script type="module">
+import { Renderer } from '../src/render.js';
+// Build strings from codepoints so the test never depends on literal encoding.
+const BLACK = '\u{2B1B}';   // ⬛
+const BLUE  = '\u{1F7E6}';  // 🟦
+const GLOBE = '\u{1F30D}';  // 🌍
+const FACE  = '\u{1F600}';  // 😀
+
+function rangeOf(ctx, w, h) {
+  const d = ctx.getImageData(0, 0, w, h).data;
+  let mn = 255, mx = 0;
+  for (let i = 0; i < d.length; i++) { if (d[i] < mn) mn = d[i]; if (d[i] > mx) mx = d[i]; }
+  return mx - mn;
+}
+await document.fonts.ready;
+
+// codec string: blue background + a face blended over it (exercises bg fill,
+// glyph blend, and the quadtree's root cell).
+const codec = BLUE + FACE;
+const r = new Renderer();
+const c1 = document.getElementById('c1'); const c1ctx = c1.getContext('2d');
+r.decode(codec, c1ctx, 256);
+
+// DSL scene: a centered globe at half size (exercises sprite parse + drawImage).
+const c2 = document.createElement('canvas'); c2.width = c2.height = 256;
+document.body.appendChild(c2);
+r.scene(GLOBE + 's8', c2.getContext('2d'), 256);
+
+// viewer element gets its string imperatively (avoids text-content encoding).
+const v = document.getElementById('v');
+v.value = codec;
+
+window.__results = {
+  c1bgIsBlue: Array.from(c1ctx.getImageData(0, 0, 1, 1).data),   // expect blue-ish, not black
+  renderer: rangeOf(c1ctx, 256, 256),
+  scene: rangeOf(c2.getContext('2d'), 256, 256),
+  viewer: rangeOf(v.shadowRoot.querySelector('canvas').getContext('2d'), 256, 256),
+};
+window.dispatchEvent(new Event('imgoji-ready'));
+</script>
+</body></html>

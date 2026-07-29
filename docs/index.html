@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f5f5f3">
+<title>imgoji: images as strings of emoji</title>
+<meta name="description" content="Render an imgoji string, or encode an image as a quadtree or a flat emoji grid for terminals. Runs in the browser on the componentized imgoji library.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+<!--
+  Serve this page from the repo root so the componentized imports resolve:
+
+      python3 -m http.server
+      bunx serve .
+
+  The page imports ../src/index.js (Encoder + <imgoji-viewer>) and reads the
+  emoji codepoint list from ../assets/emoji-list.js. This is the same root-relative
+  convention demo.html and the Playwright tests already use.
+-->
+</head>
+<body>
+
+<a class="skip-link" href="#view-panel">Skip to tool</a>
+
+<header class="site-header">
+  <a class="brand" href="#"><span class="mark" aria-hidden="true">🖼</span> imgoji</a>
+  <nav aria-label="Library">
+    <a href="paper.html">paper</a>
+    <a href="../FORMAT.md">format</a>
+    <a href="../src/index.js">source</a>
+    <a href="../README.md">readme</a>
+  </nav>
+</header>
+
+<main class="container">
+  <p class="intro">imgoji turns an image into a string of emoji. Render a string, or
+    encode an image as a quadtree or a grid.</p>
+
+  <!-- ====================== TABS ====================== -->
+  <nav class="tabs" role="tablist" aria-label="Mode">
+    <button type="button" role="tab" aria-selected="true" data-tab="view" class="active">view</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="encode">encode</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="grid">grid</button>
+  </nav>
+
+  <!-- shared image picker, shown on the quad + grid tabs -->
+  <section id="picker" class="picker" hidden>
+    <div class="encode-controls">
+      <div class="encode-left">
+        <label class="dropzone empty" id="dropzone" for="file">
+          <canvas id="orig" width="256" height="256"></canvas>
+          <span class="dz-overlay">drop an image, or click to choose</span>
+          <input type="file" id="file" class="vh" accept="image/*" aria-label="choose an image">
+        </label>
+        <p class="img-name" id="imgName"></p>
+      </div>
+      <div class="picker-samples">
+        <div class="samples">
+          <span>samples</span>
+          <button type="button" data-sample="../assets/earth.jpg">moon</button>
+          <button type="button" data-sample="../assets/img/test_image_depthmap.jpg">depth</button>
+          <button type="button" data-sample="../assets/img/test_image_stickfigure.jpg">stick</button>
+          <button type="button" data-sample="../assets/img/test_image_parrot.jpg">parrot</button>
+          <button type="button" data-sample="../assets/img/test_image_cityphoto.jpg">city</button>
+        </div>
+        <p class="note">Processed in your browser. The image is not uploaded.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== RENDER (default) ====================== -->
+  <section id="view-panel" class="panel" role="tabpanel">
+    <div class="render-stage">
+      <div class="viewer-col">
+        <div class="viewport viewer-stage">
+          <imgoji-viewer id="viewer" alpha="1"></imgoji-viewer>
+        </div>
+        <div class="prefix-control">
+          <input type="range" id="prefix" min="0" max="100" step="0.5" value="100" aria-label="prefix">
+          <span class="prefix-count" id="prefixCount"></span>
+        </div>
+      </div>
+      <div class="render-side">
+        <textarea id="renderInput" class="string-in" rows="6" spellcheck="false" placeholder="paste or edit an imgoji string… it renders as you type" aria-label="imgoji string"></textarea>
+        <div class="render-actions">
+          <button type="button" class="btn primary" id="renderBtn">Render</button>
+          <button type="button" class="btn ghost sm" id="copyRender">Copy</button>
+          <span class="status" id="renderStatus" role="status" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="examples">
+      <p class="examples-label">examples</p>
+      <div class="gallery">
+        <button type="button" class="example" data-decode="examples/moon.imgoji">
+          <img src="../assets/earth.jpg" alt="" loading="lazy"><span>moon</span>
+        </button>
+        <button type="button" class="example" data-decode="examples/depth.imgoji">
+          <img src="../assets/img/test_image_depthmap.jpg" alt="" loading="lazy"><span>depth</span>
+        </button>
+        <button type="button" class="example" data-decode="examples/stick.imgoji">
+          <img src="../assets/img/test_image_stickfigure.jpg" alt="" loading="lazy"><span>stick</span>
+        </button>
+        <button type="button" class="example" data-decode="examples/parrot.imgoji">
+          <img src="../assets/img/test_image_parrot.jpg" alt="" loading="lazy"><span>parrot</span>
+        </button>
+        <button type="button" class="example" data-decode="examples/city.imgoji">
+          <img src="../assets/img/test_image_cityphoto.jpg" alt="" loading="lazy"><span>city</span>
+        </button>
+        <button type="button" class="example" data-decode="examples/roller.imgoji" data-reveal="build">
+          <img src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Crect%20width%3D%2296%22%20height%3D%2296%22%20fill%3D%22%23e9ecef%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2240%22%20fill%3D%22none%22%20stroke%3D%22%231f2430%22%20stroke-width%3D%2211%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2213%22%20fill%3D%22%233a4152%22%2F%3E%3Cg%20stroke%3D%22%233a4152%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%3E%3Cline%20x1%3D%2248%22%20y1%3D%2216%22%20x2%3D%2248%22%20y2%3D%2235%22%2F%3E%3Cline%20x1%3D%2248%22%20y1%3D%2261%22%20x2%3D%2248%22%20y2%3D%2280%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%2248%22%20x2%3D%2235%22%20y2%3D%2248%22%2F%3E%3Cline%20x1%3D%2261%22%20y1%3D%2248%22%20x2%3D%2280%22%20y2%3D%2248%22%2F%3E%3Cline%20x1%3D%2225%22%20y1%3D%2225%22%20x2%3D%2238%22%20y2%3D%2238%22%2F%3E%3Cline%20x1%3D%2258%22%20y1%3D%2258%22%20x2%3D%2271%22%20y2%3D%2271%22%2F%3E%3Cline%20x1%3D%2271%22%20y1%3D%2225%22%20x2%3D%2258%22%20y2%3D%2238%22%2F%3E%3Cline%20x1%3D%2238%22%20y1%3D%2258%22%20x2%3D%2225%22%20y2%3D%2271%22%2F%3E%3C%2Fg%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%226%22%20fill%3D%22%238a93a6%22%2F%3E%3C%2Fsvg%3E" alt="" loading="lazy"><span>roller</span>
+        </button>
+      </div>
+    </div>
+    <code class="api">&lt;imgoji-viewer&gt;  ·  Renderer.decode(str, ctx)</code>
+  </section>
+
+  <!-- ====================== QUAD ====================== -->
+  <section id="encode-panel" class="panel" role="tabpanel" hidden>
+    <header class="sec-head">
+      <p class="lab">// encode</p>
+      <h2>Encode the image as a blended quadtree string.</h2>
+      <code class="api">new Encoder().encode(image, { depth, byteTarget, seed })</code>
+    </header>
+
+    <div class="encode-fields">
+      <label class="field">
+        <span class="field-row"><span class="field-label">Detail</span><span class="val" id="detailVal"></span></span>
+        <input type="range" id="detail" min="1" max="11" step="1" value="5">
+      </label>
+      <label class="field">
+        <span class="field-row"><span class="field-label">Anchor emoji</span><span class="opt">optional</span></span>
+        <input type="text" id="seed" placeholder="pins the first cell" maxlength="40" autocomplete="off">
+      </label>
+      <label class="check"><input type="checkbox" id="encodeSemantic"> semantic base layer</label>
+      <p class="adv-note" id="encodeSemanticWarn">Pins detected objects (faces, clothing, etc.) as the encode's base layers via CLIP + OWL-ViT — downloads hundreds of MB from huggingface.co and runs them on your device. Slow first run; needs a capable machine.</p>
+      <details class="advanced">
+        <summary>Advanced</summary>
+        <div class="adv-grid">
+          <label class="adv">Blend
+            <input type="range" id="advAlpha" min="0.1" max="1" step="0.05" value="1">
+            <span class="adv-val" id="advAlphaVal">1.00</span>
+          </label>
+          <label class="adv">Compare
+            <select id="advCompare"><option>8</option><option>16</option><option>24</option><option selected>32</option><option>48</option><option>64</option><option>128</option><option>256</option></select>
+          </label>
+          <label class="adv">Threshold
+            <input type="range" id="advThreshold" min="0" max="150" step="1" value="0">
+            <span class="adv-val" id="advThresholdVal">auto</span>
+          </label>
+          <label class="adv">Detail gate
+            <input type="range" id="advDetailGate" min="0" max="10" step="0.5" value="0">
+            <span class="adv-val" id="advDetailGateVal">0</span>
+          </label>
+          <label class="adv">Skip bias
+            <input type="range" id="advSkipBias" min="0" max="0.5" step="0.05" value="0">
+            <span class="adv-val" id="advSkipBiasVal">0</span>
+          </label>
+          <label class="adv adv-wide">Edge smoothing
+            <input type="checkbox" id="advBilateral" checked>
+            <input type="range" id="advBilateralR" min="5" max="250" step="5" value="32">
+            <span class="adv-val" id="advBilateralRVal">32</span>
+          </label>
+          <button type="button" class="btn ghost sm" id="advReset">Reset</button>
+        </div>
+        <p class="adv-note">Threshold 0 lets the byte budget pick the prune point; raise it to prune harder. Compare is match resolution: higher is sharper but slower and rebuilds the palette.</p>
+      </details>
+      <div class="encode-actions">
+        <button type="button" class="btn primary" id="encodeGo">Encode</button>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="viewport recon-wrap">
+        <imgoji-viewer id="reconViewer" alpha="1"></imgoji-viewer>
+      </div>
+      <div class="prefix-control">
+        <input type="range" id="reconPrefix" min="0" max="100" step="0.5" value="100" aria-label="prefix">
+        <span class="prefix-count" id="reconPrefixCount"></span>
+      </div>
+      <p class="stats" id="stats"></p>
+    </div>
+
+    <div class="outwrap">
+      <div class="out-head"><span>string</span><button type="button" class="btn ghost sm" id="copyStr">Copy</button></div>
+      <output id="out" class="out" aria-label="encoded imgoji string"></output>
+    </div>
+  </section>
+
+  <!-- ====================== GRID ====================== -->
+  <section id="grid-panel" class="panel" role="tabpanel" hidden>
+    <header class="sec-head">
+      <p class="lab">// grid</p>
+      <h2>Flatten the image into a grid of emoji — color, plus semantic picks where objects are detected.</h2>
+      <code class="api">encoder.rasterize(image, { cols, rows, boost, lambda })</code>
+    </header>
+
+    <div class="encode-fields">
+      <label class="field">
+        <span class="field-row"><span class="field-label">Detail</span><span class="val" id="gridDetailVal"></span></span>
+        <input type="range" id="gridDetail" min="1" max="80" step="1" value="24">
+      </label>
+      <label class="field-inline">Background
+        <select id="gridBg">
+          <option selected>dark</option>
+          <option>light</option>
+        </select>
+      </label>
+      <label class="field-inline">Line height
+        <input type="number" id="gridLineHeight" min="1" max="2" step="0.05" value="1" title="rows = cols ÷ line-height. Set to the target context's line-height (~1.2 for chat) so a pasted grid renders square; 1 = square for terminals.">
+      </label>
+      <label class="check"><input type="checkbox" id="blankBg"> blank background cells</label>
+      <label class="check"><input type="checkbox" id="gridSemantic"> semantic matching</label>
+      <p class="adv-note" id="gridSemanticWarn">Semantic mode downloads CLIP + OWL-ViT models (hundreds of MB) from huggingface.co and runs them on your device — a large download; the first run is slow and needs a capable machine.</p>
+      <details class="advanced" id="gridAdvanced">
+        <summary>Advanced</summary>
+        <div class="adv-grid">
+          <label class="adv">Blend λ
+            <input type="range" id="gridLambda" min="0" max="1" step="0.01" value="0.06">
+            <span class="adv-val" id="gridLambdaVal">0.06</span>
+          </label>
+          <label class="adv">Box threshold
+            <input type="range" id="gridThr" min="0" max="0.25" step="0.005" value="0.02">
+            <span class="adv-val" id="gridThrVal">0.020</span>
+          </label>
+          <label class="adv">Specificity
+            <input type="range" id="gridSpec" min="0" max="1" step="0.05" value="0.4">
+            <span class="adv-val" id="gridSpecVal">0.40</span>
+          </label>
+          <button type="button" class="btn ghost sm" id="gridReset">Reset</button>
+        </div>
+        <div class="det-section">
+          <span class="det-eyebrow">detected at this threshold</span>
+          <div class="det-list" id="gridDetections"></div>
+        </div>
+        <p class="adv-note">Detail sets the resolution and autotunes blend and box threshold. Specificity favors smaller foreground objects over larger background ones in overlaps. Tune manually here; Reset restores the autotuned values.</p>
+      </details>
+      <div class="encode-actions">
+        <button type="button" class="btn primary" id="gridBtn">Make grid</button>
+        <span class="status" id="gridStatus" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="full-bleed">
+      <div class="outwrap dark">
+        <div class="out-head"><span>grid</span><button type="button" class="btn ghost sm" id="copyGrid">Copy</button></div>
+        <pre id="gridOut" class="grid-out"></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p class="footer-links"><a href="paper.html">paper</a> · <a href="../FORMAT.md">format</a> · <a href="../src/index.js">source</a> · <a href="../README.md">readme</a></p>
+</footer>
+
+<!-- Emoji codepoint list + per-emoji keywords (classic scripts run first). -->
+<script src="../assets/emoji-list.js"></script>
+<script src="../assets/emoji-keywords.js"></script>
+<!-- Imports ../src/index.js: registers <imgoji-viewer> and exposes Encoder. -->
+<script type="module" src="app.js"></script>
+</body>
+</html>

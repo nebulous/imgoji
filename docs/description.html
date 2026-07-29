@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0d14">
+<title>imgoji: an image codec made of emoji</title>
+<meta name="description" content="imgoji encodes a square image as a string of emoji. Compositing them back together reconstructs a lossy approximation of the original. Plain text, resolution-independent, zero assets, runs in your browser.">
+<meta property="og:title" content="imgoji: an image codec made of emoji">
+<meta property="og:description" content="Encode pictures as strings of emoji. Plain text, resolution-independent, runs in the browser.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ============ HEADER ============ -->
+<header class="site-header" id="top">
+  <div class="container header-inner">
+    <a class="brand" href="#top" aria-label="imgoji home">
+      <span class="brand-mark" aria-hidden="true">🖼</span>
+      <span class="brand-name">imgoji</span>
+    </a>
+
+    <nav class="nav" aria-label="Primary">
+      <a href="#how">How it works</a>
+      <a href="#demo">Live demo</a>
+      <a href="#features">Features</a>
+      <a href="#format">Format</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="header-actions">
+      <a class="btn btn-ghost" href="https://github.com/" rel="noopener" target="_blank" id="ghLink">GitHub</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navList">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav-mobile" id="navList" aria-label="Mobile" hidden>
+    <a href="#how">How it works</a>
+    <a href="#demo">Live demo</a>
+    <a href="#features">Features</a>
+    <a href="#format">Format</a>
+    <a href="#faq">FAQ</a>
+    <a href="https://github.com/" rel="noopener" target="_blank">GitHub ↗</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="orb orb-c"></div>
+    </div>
+    <div class="container hero-inner">
+      <p class="eyebrow reveal"><span class="dot"></span> experimental image codec</p>
+      <h1 class="hero-title reveal">
+        Encode a picture as a<br>
+        <span class="grad">string of emoji.</span>
+      </h1>
+      <p class="hero-sub reveal">
+        imgoji approximates a picture with a quadtree of blended emoji. The output
+        is plain text. Paste it into a chat, a terminal, a tweet. Composite the
+        glyphs back together and a lossy reconstruction of the original appears.
+      </p>
+      <div class="hero-cta reveal">
+        <a class="btn btn-primary" href="#demo">
+          <span>Try it live</span>
+          <span class="arrow" aria-hidden="true">↓</span>
+        </a>
+        <a class="btn btn-ghost" href="#format">Read the format</a>
+      </div>
+
+      <div class="hero-figure reveal" aria-label="An image and its emoji reconstruction">
+        <div class="browser" role="img">
+          <div class="browser-bar">
+            <span class="tb-dot r"></span><span class="tb-dot y"></span><span class="tb-dot g"></span>
+            <span class="tb-url">imgoji · earthrise</span>
+          </div>
+          <div class="browser-body">
+            <figure class="tile">
+              <img src="demo/earth.jpg" alt="NASA Earthrise photograph used as the reference image" width="512" height="512" loading="eager" decoding="async">
+              <figcaption>original</figcaption>
+            </figure>
+            <span class="tile-arrow" aria-hidden="true">→</span>
+            <figure class="tile tile-emoji" id="heroMosaic" data-mosaic>
+              <span class="mosaic" id="mosaic" aria-hidden="true"></span>
+              <figcaption>emoji</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticker reveal" aria-hidden="true">
+      <div class="ticker-track">
+        <span>plain text</span><span>·</span><span>zero assets</span><span>·</span><span>resolution-independent</span><span>·</span><span>progressive prefix</span><span>·</span><span>runs in the browser</span><span>·</span><span>cross-platform by design</span><span>·</span>
+        <span>plain text</span><span>·</span><span>zero assets</span><span>·</span><span>resolution-independent</span><span>·</span><span>progressive prefix</span><span>·</span><span>runs in the browser</span><span>·</span><span>cross-platform by design</span><span>·</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="stats container-wide reveal" aria-label="Key metrics">
+    <div class="stat">
+      <div class="stat-num">~1<span class="unit">KB</span></div>
+      <div class="stat-label">typical encoded size</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">0<span class="unit">bytes</span></div>
+      <div class="stat-label">of glyph assets shipped</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">142→51</div>
+      <div class="stat-label">RMS error, depth 0→6</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">1<span class="unit">+4+16…</span></div>
+      <div class="stat-label">prefix is always valid</div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how" class="section">
+    <div class="container">
+      <header class="section-head reveal">
+        <p class="kicker">how it works</p>
+        <h2>A quadtree that blends emoji until the picture appears.</h2>
+        <p class="section-lead">
+          The first emoji approximates the image. The next four refine the
+          quadrants, the next sixteen their sub-quadrants, and so on. Each glyph
+          blends over its parent, so the approximation converges instead of
+          plateauing.
+        </p>
+      </header>
+
+      <ol class="steps">
+        <li class="step reveal">
+          <div class="step-num">01</div>
+          <h3>Subdivide</h3>
+          <p>A breadth-first quadtree splits the frame into ever-smaller regions. The sweep reads as a raster scan within each level.</p>
+          <div class="step-art" aria-hidden="true">
+            <span class="quad q0"></span><span class="quad q1"></span><span class="quad q2"></span><span class="quad q3"></span>
+          </div>
+        </li>
+        <li class="step reveal">
+          <div class="step-num">02</div>
+          <h3>Blend</h3>
+          <p>Each cell picks the single emoji that, blended over its parent’s render, best matches the original region. The operator is ordinary alpha compositing. The browser decodes it with no custom code.</p>
+          <code class="step-code">A′ = (1−a)·A + a·E</code>
+        </li>
+        <li class="step reveal">
+          <div class="step-num">03</div>
+          <h3>Prefix</h3>
+          <p>Cut the string and what’s left is still a valid, coarser image. Prefixes of 1, 5, 21, 85 mark the 1×1, 2×2, 4×4, 8×8 grid levels.</p>
+          <div class="prefix-rail" aria-hidden="true">
+            <span style="--w:8%"></span><span style="--w:24%"></span><span style="--w:56%"></span><span style="--w:100%"></span>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ LIVE DEMO ============ -->
+  <section id="demo" class="section section-demo">
+    <div class="container">
+      <header class="section-head reveal">
+        <p class="kicker">live demo</p>
+        <h2>Encode a photo as emoji.</h2>
+        <p class="section-lead">
+          This is the real encoder, running unmodified in your browser. It loads
+          the reference image, builds a glyph palette from your system emoji font,
+          then refines the reconstruction cell by cell. Drop in your own image to
+          encode it.
+        </p>
+      </header>
+
+      <div class="demo-frame reveal">
+        <div class="demo-chrome">
+          <span class="tb-dot r"></span><span class="tb-dot y"></span><span class="tb-dot g"></span>
+          <span class="demo-chrome-label">imgoji encoder</span>
+          <a class="demo-expand" href="demo/" target="_blank" rel="noopener">open in full ↗</a>
+        </div>
+        <div class="demo-viewport">
+          <iframe
+            id="demoFrame"
+            title="imgoji live encoder"
+            data-src="demo/"
+            src="about:blank"
+            loading="lazy"
+            scrolling="yes"></iframe>
+          <noscript>
+            <p style="padding:1.5rem;color:var(--muted)">The live encoder needs JavaScript. <a href="demo/">Open it directly</a>.</p>
+          </noscript>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section id="features" class="section">
+    <div class="container">
+      <header class="section-head reveal">
+        <p class="kicker">features</p>
+        <h2>No font to distribute. The OS already ships one.</h2>
+      </header>
+
+      <div class="cards">
+        <article class="card reveal">
+          <div class="card-icon">📝</div>
+          <h3>Pure plain text</h3>
+          <p>The encoded form is emoji. It transmits as text: chat, email, source control, a tweet. No container or encoding wrapper.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">🪶</div>
+          <h3>Zero assets</h3>
+          <p>No font or image is bundled. Glyphs are referenced by codepoint and resolved by the viewer’s system emoji font. The decoder is, at its core, the browser’s own compositor.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">🔭</div>
+          <h3>Resolution-independent</h3>
+          <p>Positions are fractions of the frame and each glyph scales to its region. The same string renders crisp at a favicon or a billboard.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">📶</div>
+          <h3>Progressive prefix</h3>
+          <p>Every prefix is a valid, coarser frame. Stream the head and it reads as a recognizable image; the tail only adds detail.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">🌱</div>
+          <h3>Seedable anchors</h3>
+          <p>Pin the first cells to chosen emoji (a globe for a planet, a face for a portrait) so the head carries a thematic anchor while the tail adds detail.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">🔀</div>
+          <h3>Cross-platform by design</h3>
+          <p>One string renders as Apple emoji here, Google there, Noto elsewhere. The drift isn’t a bug to suppress. It’s the affordance the format is built around.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FORMAT ============ -->
+  <section id="format" class="section section-format">
+    <div class="container">
+      <header class="section-head reveal">
+        <p class="kicker">the format</p>
+        <h2>One grammar, three serializations.</h2>
+        <p class="section-lead">
+          The model is an ordered list of placed, transformed glyph subjects
+          rendered back-to-front. JSON, a compact DSL, and SVG are three views of
+          the same scene, chosen per use case.
+        </p>
+      </header>
+
+      <div class="format-grid">
+        <div class="codecard reveal">
+          <div class="codecard-head"><span class="lang">DSL · compact</span><button class="copy" data-copy="🎪s33h8 🚀x4Dy2Fr1 🌍">copy</button></div>
+<pre><code><span class="c-com"># a sprite = glyph + lowercase ops + UPPERCASE hex</span>
+🎪s33h8       <span class="c-com"># tent at ~20% frame, hue-shifted 180°</span>
+🚀x4Dy2Fr1   <span class="c-com"># rocket offset, rotated 22.5°</span>
+🌍           <span class="c-com"># globe: full frame, centered, native</span></code></pre>
+        </div>
+
+        <div class="codecard reveal">
+          <div class="codecard-head"><span class="lang">Codec · position-implicit</span></div>
+<pre><code><span class="c-com"># BFS quadtree body, no per-cell coords</span>
+🌍🏔🌊🌳🏜️...   <span class="c-com"># position implies the region</span>
+
+<span class="c-com"># cut it → still a valid image</span>
+<span class="c-com"># run-length encoded for the wire</span></code></pre>
+        </div>
+
+        <ul class="oplist reveal">
+          <li><code>x</code> <code>y</code> translate, center-origin, ±½</li>
+          <li><code>r</code> rotate, fraction of a turn</li>
+          <li><code>s</code> scale (shrink), frame coverage</li>
+          <li><code>o</code> opacity</li>
+          <li><code>h</code> hue rotation (HSV)</li>
+          <li><code>z</code> zoom (reserved)</li>
+        </ul>
+      </div>
+
+      <p class="format-note reveal">
+        Lowercase letters are operators, uppercase <code>[0-9A-F]</code> is data.
+        More hex digits mean finer precision, not a bigger range. A shorter
+        prefix is always a valid coarser value.
+        <a class="text-link" href="https://github.com/" rel="noopener" target="_blank">Read the full spec →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ CROSS-PLATFORM ============ -->
+  <section class="section section-platform">
+    <div class="container platform-inner reveal">
+      <div class="platform-text">
+        <p class="kicker">one string, three renderers</p>
+        <h2>Same emoji, different strokes per device.</h2>
+        <p>
+          Encode on a Mac and the head reads as Apple emoji. Open it on an Android
+          phone and Noto paints the glyphs. The format doesn’t fight this. Devices
+          ship a glyph set, so referencing glyphs by codepoint ships no font of its own.
+        </p>
+      </div>
+      <div class="platform-icons" aria-hidden="true">
+        <span class="pchip">🍎 Apple</span>
+        <span class="pchip">🟢 Google</span>
+        <span class="pchip">🅽 Noto</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section id="faq" class="section">
+    <div class="container container-narrow">
+      <header class="section-head reveal">
+        <p class="kicker">faq</p>
+        <h2>Good questions.</h2>
+      </header>
+      <div class="faq reveal">
+        <details>
+          <summary>Is this a serious codec?</summary>
+          <p>It’s an experiment that takes itself seriously. The encoding model (a quadtree of blended glyphs with a prefix property) converges: RMS on the reference image drops from ~142 to ~51 across depth 0→6. It is not competitive with JPEG or AVIF on size or fidelity. It is competitive on charm and portability.</p>
+        </details>
+        <details>
+          <summary>Why does it look different on my friend’s phone?</summary>
+          <p>Because the viewer’s system emoji font supplies the pixels. Apple, Google, and Noto draw the same codepoints differently, so the same string renders as three related-but-distinct pictures. This drift is intended, not a defect.</p>
+        </details>
+        <details>
+          <summary>What stops the reconstruction at one color per cell?</summary>
+          <p>Blending, not replacing. Each cell composites its chosen emoji over its parent’s accumulated render with a fixed alpha (0.7 by default). The final color at a pixel is a weighted chain from the root down, and each level shrinks the residual, so the output converges past the discrete emoji palette instead of plateauing.</p>
+        </details>
+        <details>
+          <summary>Can I hand-write a scene?</summary>
+          <p>Yes. The DSL is written by hand and pasted straight into markup: emoji plus ASCII <code>[0-9A-F]</code> and lowercase letters, with no quoting or escaping. A glyph followed by a lowercase letter is a positioned sprite; otherwise it’s codec body.</p>
+        </details>
+        <details>
+          <summary>What’s in the palette?</summary>
+          <p>Unicode 15.1.0 Emoji-property codepoints across the classic pictograph ranges (modifiers and components excluded), plus solid color-anchor emoji (circles and squares, including black and white) to extend the palette’s convex hull so blending can reach extreme colors.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="cta-band">
+    <div class="container cta-inner reveal">
+      <h2>Turn a picture into a text message.</h2>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="#demo">Open the encoder</a>
+        <a class="btn btn-ghost" href="demo/" target="_blank" rel="noopener">Full-screen app ↗</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span class="brand-mark" aria-hidden="true">🖼</span>
+      <span>imgoji</span>
+    </div>
+    <p class="footer-tag">An image codec made of emoji. Experimental.</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="#how">How it works</a>
+      <a href="#demo">Demo</a>
+      <a href="#format">Format</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/" rel="noopener" target="_blank">GitHub ↗</a>
+    </nav>
+    <p class="footer-fine">Runs entirely in your browser · system emoji font · no tracking</p>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="Back to top" hidden>↑</button>
+
+<script src="site.js" defer></script>
+</body>
+</html>

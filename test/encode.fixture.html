@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><body>
+<!-- emoji codepoint list (sets window.IMGOJI_EMOJI) -->
+<script src="../assets/emoji-list.js"></script>
+<script type="module">
+import { Encoder } from '../src/encode.js';
+import { Renderer } from '../src/render.js';
+
+function rangeOf(ctx, w, h) {
+  const d = ctx.getImageData(0, 0, w, h).data;
+  let mn = 255, mx = 0;
+  for (let i = 0; i < d.length; i++) { if (d[i] < mn) mn = d[i]; if (d[i] > mx) mx = d[i]; }
+  return mx - mn;
+}
+await document.fonts.ready;
+
+// Synthetic source: a colored gradient + shapes (not uniform, so the quadtree
+// has something to refine).
+const src = document.createElement('canvas'); src.width = src.height = 256;
+const sx = src.getContext('2d');
+const g = sx.createLinearGradient(0, 0, 256, 256);
+g.addColorStop(0, '#2030a0'); g.addColorStop(1, '#e0c040');
+sx.fillStyle = g; sx.fillRect(0, 0, 256, 256);
+sx.fillStyle = '#d04040'; sx.beginPath(); sx.arc(80, 90, 50, 0, 7); sx.fill();
+sx.fillStyle = '#30b060'; sx.fillRect(150, 150, 80, 60);
+
+const enc = new Encoder({ compare: 16 });
+const out = await enc.encode(src, { depth: 3, byteTarget: 600 });
+
+// Decode the produced string with the (separate) Renderer.
+const r = new Renderer();
+const rc = document.createElement('canvas'); rc.width = rc.height = 256;
+const rctx = rc.getContext('2d');
+r.decode(out.string, rctx, 256);
+
+window.__results = {
+  paletteLen: enc.palette.length,
+  strLen: out.string.length,
+  bytes: out.bytes,
+  de00: +out.de00.toFixed(1),
+  reconRange: rangeOf(rctx, 256, 256),
+  firstChars: [...out.string].slice(0, 8).join(''),
+};
+window.dispatchEvent(new Event('imgoji-ready'));
+</script>
+</body></html>

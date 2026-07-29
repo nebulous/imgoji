@@ -4,14 +4,15 @@
 import { Renderer } from './render.js';
 
 const WORK = 256;
+const MAX_RES = 2048;   // cap on internal render resolution (memory); otherwise display-aware
 
 /**
  * Drop-in custom element that renders an imgoji string to a canvas.
  *
  * The string is the element's text content: inline, copyable, and it degrades to
- * plain text without JavaScript. The canvas renders at 256² (the codec's
- * canonical resolution) and CSS-scales to the host, so the element is
- * resolution-independent.
+ * plain text without JavaScript. The canvas renders at the host's display size
+ * (× devicePixelRatio), re-rendering on resize, so output is as sharp as the
+ * system emoji font allows — not fixed to 256.
  *
  * Register once (the module side-effect defines the element):
  *   <script type="module" src="imgoji/viewer.js"></script>
@@ -37,6 +38,7 @@ class ImgojiViewer extends HTMLElement {
     this._ctx = this._canvas.getContext('2d', { willReadFrequently: true });
     this._str = '';
     this._raf = 0;
+    this._ro = null;            // ResizeObserver → re-render at display size
     const root = this.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     style.textContent = `:host{display:inline-block;width:256px;height:256px;line-height:0}canvas{width:100%;height:100%;display:block;image-rendering:auto}`;
@@ -49,9 +51,22 @@ class ImgojiViewer extends HTMLElement {
     if (this.getAttribute('src')) this._loadSrc();
     else if (this._str === '' && this.textContent != null) { this._str = this.textContent.trim(); }
     this._applyAttrs();
+    this._observe();
     this._render();
   }
-  disconnectedCallback() { cancelAnimationFrame(this._raf); }
+  disconnectedCallback() { cancelAnimationFrame(this._raf); this._unobserve(); }
+
+  // Re-render when the host's display size changes, so the internal canvas tracks
+  // display × devicePixelRatio (the decode cost is bounded; coalesced via rAF).
+  _observe() {
+    if (this._ro || typeof ResizeObserver === 'undefined') return;
+    this._ro = new ResizeObserver(() => {
+      cancelAnimationFrame(this._raf);
+      this._raf = requestAnimationFrame(() => this._render());
+    });
+    this._ro.observe(this._canvas);
+  }
+  _unobserve() { if (this._ro) { this._ro.disconnect(); this._ro = null; } }
 
   attributeChangedCallback() { this._applyAttrs(); this._render(); }
 
@@ -81,8 +96,14 @@ class ImgojiViewer extends HTMLElement {
     if (p < 1) this._raf = requestAnimationFrame(() => this._animate(start));
   }
   _draw(prefix) {
-    // decode floors to >=1 token (render.js), so prefix 0 renders exactly the root glyph.
-    this._renderer.decode(this._str, this._ctx, WORK, { prefix });
+    // Render at the canvas's display size × devicePixelRatio (floored to WORK,
+    // capped at MAX_RES), so sharpness is bounded by the system emoji font, not a
+    // fixed 256. decode floors to >=1 token, so prefix 0 still renders the root glyph.
+    const css = this._canvas.clientWidth || WORK;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const S = Math.max(WORK, Math.min(MAX_RES, Math.round(css * dpr)));
+    if (this._canvas.width !== S) { this._canvas.width = S; this._canvas.height = S; }
+    this._renderer.decode(this._str, this._ctx, S, { prefix });
   }
 }
 

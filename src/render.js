@@ -53,8 +53,12 @@ export class Renderer {
   // outlines, sub-origin/scale (for rendering into a larger canvas).
   /**
    * Decode a codec (BFS quadtree) imgoji string onto a 2D context.
-   * @param {string} str imgoji codec string (optionally RLE-compressed: a
-   *   background anchor followed by breadth-first cells).
+   * @param {string} str imgoji codec string (optionally RLE-compressed): a
+   *   background anchor followed by breadth-first cells, where each cell is either
+   *   a plain glyph (with an optional leaf marker) or a DSL sprite list that claims
+   *   the cell (positioned sprites; the quadtree subdivides beneath them). A leading
+   *   glyph with no transform op is the background anchor (a solid color fill); give
+   *   it a no-op op such as `r0` to render it as a picture.
    * @param {CanvasRenderingContext2D} ctx destination context.
    * @param {number} [size=256] canvas side length.
    * @param {object} [opts]
@@ -153,24 +157,6 @@ export class Renderer {
     return idx;
   }
 
-  // Render a DSL composition (positional sprites, back-to-front).
-  /**
-   * Render a DSL composition (positioned sprites, back-to-front) onto a 2D
-   * context. For hand-authored scenes, not the codec BFS string (see decode).
-   * @param {string} str DSL scene string (glyph + transform ops, whitespace-separated).
-   * @param {CanvasRenderingContext2D} ctx destination context.
-   * @param {number} [size=256] canvas side length.
-   */
-  scene(str, ctx, size = WORK) {
-    const S = size;
-    ctx.clearRect(0, 0, S, S);
-    const tokens = splitGraphemes(rleExpand(str)).filter(t => t !== ' ');
-    let i = 0;
-    while (i < tokens.length) {
-      if (isDSLStart(tokens, i)) i = this.renderSprite(tokens, i, ctx, S);
-      else i++; // whitespace already filtered; anything else is a no-op separator
-    }
-  }
 }
 
 function pushQuad(next, cell, hs, cd, alpha) {

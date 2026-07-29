@@ -29,7 +29,7 @@ r.decode(codec, c1ctx, 256);
 // DSL scene: a centered globe at half size (exercises sprite parse + drawImage).
 const c2 = document.createElement('canvas'); c2.width = c2.height = 256;
 document.body.appendChild(c2);
-r.scene(GLOBE + 's8', c2.getContext('2d'), 256);
+r.decode(GLOBE + 's8', c2.getContext('2d'), 256);
 
 // viewer element gets its string imperatively (avoids text-content encoding).
 const v = document.getElementById('v');

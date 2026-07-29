@@ -1,0 +1,181 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>imgoji</title><meta name="description" content="Documentation for imgoji"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><link rel="stylesheet" href="assets/custom.css"/><script defer src="assets/main.js"></script><script defer src="assets/custom.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">imgoji</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h1>imgoji</h1></div>
+<div class="tsd-panel tsd-typography"><img width="932" height="326" alt="image" src="https://github.com/user-attachments/assets/f60f2668-1504-4ed9-b728-42caeecc0bbb" />
+<h1 id="imgoji" class="tsd-anchor-link">imgoji<a href="#imgoji" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p>An experimental image codec that encodes a square image as a string of emoji
+characters. Compositing the emoji back together reconstructs a lossy
+approximation of the original image.</p>
+<p>The emoji string is the encoded form. It is compact and transmissible as plain
+text. A decoder renders the referenced glyphs at the regions they encode.</p>
+<h2 id="platform" class="tsd-anchor-link">Platform<a href="#platform" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The codec runs in the browser. JavaScript renders emoji to a canvas using the
+system emoji font (modern browsers render color emoji on canvas), reads pixels
+back for the similarity search, and composites the reconstruction on the same
+canvas. The browser supplies the emoji, so no glyph assets are bundled.</p>
+<p>Each cell's search compares against every emoji, so each emoji is rendered once
+to an offscreen glyph atlas and reused, not re-rendered per comparison.</p>
+<p>A consequence of using the system font: glyph pixels depend on the viewer's
+operating system. macOS renders Apple emoji, Windows renders Segoe UI Emoji,
+Linux and Android render Noto. A string encoded in one browser decodes to
+slightly different pixels in another. Encode and decode stay self-consistent
+within a single browser session, which uses one font. Cross-platform drift is
+expected and treated as an experiment, not a defect.</p>
+<h2 id="encoding-model" class="tsd-anchor-link">Encoding model<a href="#encoding-model" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>A quadtree approximates the image. The first emoji approximates the whole image.
+The next four approximate the upper-left, upper-right, bottom-left, and
+bottom-right quadrants. The following sixteen approximate each quadrant's four
+sub-quadrants, and so on.</p>
+<p>A prefix of the string is always a valid approximation. Longer strings refine
+finer regions and get progressively closer to the source. The reconstruction is
+resolution independent: each emoji is scaled to cover the region it represents,
+so the same string renders at any output size.</p>
+<p>Each cell beyond the root blends its chosen emoji with the parent cell's
+rendered value over that region. Blending makes the approximation converge:
+the final color at a pixel is a weighted combination of the emoji on the chain
+from the root to the finest cell covering it, and each level shrinks the
+residual. The blend is RGB alpha compositing, <code>A' = (1-a)A + a*E</code>, at a fixed
+ratio (0.65 by default). The root cell has no parent and takes a=1. Each deeper
+cell picks the emoji that minimizes residual against the original over its
+region. A pure replace operator was ruled out: at the one-emoji-per-pixel limit
+it confines the output to the discrete set of emoji mean colors and plateaus
+instead of converging.</p>
+<p>The first cell, and optionally the first few, can be user-supplied as a seed.
+A seed pins those positions to chosen emoji so the head of the string carries a
+thematic anchor (a globe for a planet photo) while the auto-encoded tail drives
+the reconstruction toward the original. Seeded cells are painted, not searched.
+Deeper cells blend over them as usual. A pixel-poor seed leaves residual that
+refinement removes only gradually. Higher alpha and deeper quadtree recover it.</p>
+<h2 id="status" class="tsd-anchor-link">Status<a href="#status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The encoder lives in <code>src/</code>. <code>docs/index.html</code> is the interactive tool. It
+loads an Emoji-property codepoint list from <code>assets/emoji-list.js</code>, generated
+from Unicode emoji-data.txt 15.1.0 across the classic pictograph ranges with
+modifiers and components excluded. Solid color-anchor emoji (circles and
+squares, including black and white) are included to extend the palette's convex
+hull so blending can reach extreme colors. The list is pinned to 15.1.0 rather
+than latest so it excludes bleeding-edge emoji that current system fonts may not
+ship and would render as tofu.</p>
+<p>Verified on <code>assets/earth.jpg</code> (NASA Earthrise). Reconstruction RMS against the
+original (alpha 0.7, no seed) falls with depth: 142 mean-color baseline, 145 at
+depth 0, 127 at depth 1, 107 at depth 2, 93 at depth 3, 76 at depth 4, 61 at
+depth 5, 53 at depth 6. Depth is capped at 8 (one pixel per cell at 256²).
+Adding the color-anchor palette drops depth 6 to about 51.</p>
+<p>Reference image: <code>assets/earth.jpg</code>, 1000x1000.</p>
+<h2 id="running" class="tsd-anchor-link">Running<a href="#running" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Serve the repo over http, then open <a href="http://localhost:8000/docs/:">http://localhost:8000/docs/:</a></p>
+<pre><code>python3 -m http.server 8000
+bunx serve .
+</code></pre>
+<p><code>docs/index.html</code> is the tool: it encodes an image, decodes any imgoji string
+via <code>&lt;imgoji-viewer&gt;</code>, and rasterizes a flat emoji grid for terminals. Serve
+from the repo root (not from <code>docs/</code>) so <code>../src</code> and <code>../assets/emoji-list.js</code>
+resolve. http is required rather than file://, because the encoder loads
+<code>earth.jpg</code> and reads its pixels via <code>getImageData</code>. A same-origin server keeps
+the canvas untainted.</p>
+<h2 id="as-a-library" class="tsd-anchor-link">As a library<a href="#as-a-library" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The codec ships as importable ES modules in <code>src/</code>, with no build step. The
+<strong>renderer</strong> (string to pixels) and <strong>encoder</strong> (image to string) are separate:
+a page that only displays strings imports <code>imgoji/render</code> and pulls in no
+encoder or glyph-atlas code. The public API is JSDoc-annotated in the source.</p>
+<h3 id="put-a-viewer-on-your-page" class="tsd-anchor-link">Put a viewer on your page<a href="#put-a-viewer-on-your-page" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Register the element once, then use it anywhere. The string is the element's
+text content: inline, copyable, and it degrades to plain text without JS.</p>
+<pre><code class="html"><span class="hl-0">&lt;!</span><span class="hl-1">doctype</span><span class="hl-2"> </span><span class="hl-3">html</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">meta</span><span class="hl-2"> </span><span class="hl-3">charset</span><span class="hl-2">=</span><span class="hl-4">&quot;utf-8&quot;</span><span class="hl-0">&gt;</span><br/><span class="hl-5">&lt;!-- serve viewer.js and its imports (render.js, glyph.js, util.js) over http(s) --&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">script</span><span class="hl-6"> </span><span class="hl-3">type</span><span class="hl-6">=</span><span class="hl-4">&quot;module&quot;</span><span class="hl-6"> </span><span class="hl-3">src</span><span class="hl-6">=</span><span class="hl-4">&quot;/imgoji/viewer.js&quot;</span><span class="hl-0">&gt;&lt;/</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><br/><span class="hl-0">&lt;</span><span class="hl-1">imgoji-viewer</span><span class="hl-2"> </span><span class="hl-3">alpha</span><span class="hl-2">=</span><span class="hl-4">&quot;0.65&quot;</span><span class="hl-2"> </span><span class="hl-3">style</span><span class="hl-2">=</span><span class="hl-4">&quot;width:320px&quot;</span><span class="hl-0">&gt;</span><span class="hl-2">⬛🌍s4🏔️s8…</span><span class="hl-0">&lt;/</span><span class="hl-1">imgoji-viewer</span><span class="hl-0">&gt;</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Loading: <code>viewer.js</code> is an ES module with relative imports, so serve the four
+files (<code>viewer.js</code>, <code>render.js</code>, <code>glyph.js</code>, <code>util.js</code>) from one directory over
+http(s). The package is not on a CDN or npm yet. Copy the files from <code>src/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>attribute</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(text)</td>
+<td></td>
+<td>the imgoji string (used unless <code>src</code> is set)</td>
+</tr>
+<tr>
+<td><code>alpha</code></td>
+<td><code>0.65</code></td>
+<td>per-layer blend weight. Colors drift if it differs from the encoder's <code>alpha</code>.</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td>full</td>
+<td>render only the first fraction <code>0..1</code> (the prefix property). <code>0</code> is the root glyph</td>
+</tr>
+<tr>
+<td><code>autoplay</code></td>
+<td>off</td>
+<td>animate <code>prefix</code> from 0 to 1 on render</td>
+</tr>
+<tr>
+<td><code>src</code></td>
+<td></td>
+<td>URL of an <code>.imgoji</code> file to fetch (overrides the text content)</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>.value</code> property holds the string. Setting it re-renders.</p>
+<p>Size it with CSS like any element (<code>width</code>, <code>height</code>). The viewer renders to match
+its displayed size and re-renders on resize, so it stays as sharp as the system
+emoji font allows. The codec image is square. A non-square box stretches it,
+which is intended.</p>
+<h3 id="render-display-only" class="tsd-anchor-link">Render (display only)<a href="#render-display-only" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<pre><code class="js"><span class="hl-7">import</span><span class="hl-2"> { </span><span class="hl-8">Renderer</span><span class="hl-2"> } </span><span class="hl-7">from</span><span class="hl-2"> </span><span class="hl-9">&#39;imgoji/render&#39;</span><span class="hl-2">;   </span><span class="hl-5">// pulls in no encoder code</span><br/><br/><span class="hl-10">const</span><span class="hl-2"> </span><span class="hl-11">r</span><span class="hl-2"> = </span><span class="hl-10">new</span><span class="hl-2"> </span><span class="hl-12">Renderer</span><span class="hl-2">();</span><br/><span class="hl-8">r</span><span class="hl-2">.</span><span class="hl-12">decode</span><span class="hl-2">(</span><span class="hl-8">string</span><span class="hl-2">, </span><span class="hl-8">ctx</span><span class="hl-2">);                        </span><span class="hl-5">// codec BFS string onto a 2D context</span><br/><span class="hl-8">r</span><span class="hl-2">.</span><span class="hl-12">decode</span><span class="hl-2">(</span><span class="hl-8">string</span><span class="hl-2">, </span><span class="hl-8">ctx</span><span class="hl-2">, </span><span class="hl-13">256</span><span class="hl-2">, { </span><span class="hl-8">prefix:</span><span class="hl-2"> </span><span class="hl-13">0.5</span><span class="hl-2"> });  </span><span class="hl-5">// render half the stream</span><br/><span class="hl-8">r</span><span class="hl-2">.</span><span class="hl-12">decode</span><span class="hl-2">(</span><span class="hl-9">&#39;🌍r0 🚀x4y2&#39;</span><span class="hl-2">, </span><span class="hl-8">ctx</span><span class="hl-2">);          </span><span class="hl-5">// DSL composition (r0 renders the leading glyph as a picture)</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="encode-image-to-string" class="tsd-anchor-link">Encode (image to string)<a href="#encode-image-to-string" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<pre><code class="js"><span class="hl-7">import</span><span class="hl-2"> { </span><span class="hl-8">Encoder</span><span class="hl-2"> } </span><span class="hl-7">from</span><span class="hl-2"> </span><span class="hl-9">&#39;imgoji&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-10">const</span><span class="hl-2"> </span><span class="hl-11">enc</span><span class="hl-2"> = </span><span class="hl-10">new</span><span class="hl-2"> </span><span class="hl-12">Encoder</span><span class="hl-2">();</span><br/><span class="hl-10">const</span><span class="hl-2"> { </span><span class="hl-11">string</span><span class="hl-2">, </span><span class="hl-11">deflatedBytes</span><span class="hl-2">, </span><span class="hl-11">de00</span><span class="hl-2"> } = </span><span class="hl-7">await</span><span class="hl-2"> </span><span class="hl-8">enc</span><span class="hl-2">.</span><span class="hl-12">encode</span><span class="hl-2">(</span><span class="hl-8">image</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-8">byteTarget:</span><span class="hl-2"> </span><span class="hl-13">8192</span><span class="hl-2">,   </span><span class="hl-5">// deflated-byte budget (threshold is searched to hit it)</span><br/><span class="hl-2">  </span><span class="hl-8">alpha:</span><span class="hl-2"> </span><span class="hl-13">0.65</span><span class="hl-2">,        </span><span class="hl-5">// must match the viewer&#39;s alpha</span><br/><span class="hl-2">  </span><span class="hl-8">seed:</span><span class="hl-2"> </span><span class="hl-9">&#39;🌍s4&#39;</span><span class="hl-2">,        </span><span class="hl-5">// optional DSL base layers</span><br/><span class="hl-2">});</span><br/><span class="hl-5">// flat emoji grid for terminals or chat:</span><br/><span class="hl-10">const</span><span class="hl-2"> { </span><span class="hl-11">grid</span><span class="hl-2"> } = </span><span class="hl-7">await</span><span class="hl-2"> </span><span class="hl-8">enc</span><span class="hl-2">.</span><span class="hl-12">rasterize</span><span class="hl-2">(</span><span class="hl-8">image</span><span class="hl-2">, { </span><span class="hl-8">cols:</span><span class="hl-2"> </span><span class="hl-13">24</span><span class="hl-2">, </span><span class="hl-8">rows:</span><span class="hl-2"> </span><span class="hl-13">24</span><span class="hl-2"> });</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>docs/index.html</code> (served from the project root) is the interactive tool: it
+encodes a chosen image with <code>Encoder</code>, renders the string in an
+<code>&lt;imgoji-viewer&gt;</code>, and scrubs the prefix to show the progressive property. See
+<code>FORMAT.md</code> for the string grammar.</p>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#imgoji"><span>imgoji</span></a>
+<ul>
+<li><a href="#platform"><span>Platform</span></a></li>
+<li><a href="#encoding-model"><span>Encoding model</span></a></li>
+<li><a href="#status"><span>Status</span></a></li>
+<li><a href="#running"><span>Running</span></a></li>
+<li><a href="#as-a-library"><span>As a library</span></a></li>
+<li>
+<ul>
+<li><a href="#put-a-viewer-on-your-page"><span>Put a viewer on your page</span></a></li>
+<li><a href="#render-display-only"><span>Render (display only)</span></a></li>
+<li><a href="#encode-image-to-string"><span>Encode (image to string)</span></a></li></ul></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="modules.html">imgoji</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

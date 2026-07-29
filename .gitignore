@@ -21,5 +21,3 @@
 # macOS Finder metadata
 .DS_Store
 
-# Generated API reference (TypeDoc). Regenerate with: bun run docs:api
-/docs/api-typedoc/

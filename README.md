@@ -1,3 +1,6 @@
+<img width="932" height="326" alt="image" src="https://github.com/user-attachments/assets/f60f2668-1504-4ed9-b728-42caeecc0bbb" />
+
+
 # imgoji
 
 An experimental image codec that encodes a square image as a string of emoji

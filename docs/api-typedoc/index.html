@@ -83,7 +83,8 @@ the canvas untainted.</p>
 <p>The codec ships as importable ES modules in <code>src/</code>, with no build step. The
 <strong>renderer</strong> (string to pixels) and <strong>encoder</strong> (image to string) are separate:
 a page that only displays strings imports <code>imgoji/render</code> and pulls in no
-encoder or glyph-atlas code. The public API is JSDoc-annotated in the source.</p>
+encoder or glyph-atlas code. The public API is JSDoc-annotated in the source.
+Regenerate the API reference (TypeDoc) with <code>bun run docs:api</code>.</p>
 <h3 id="put-a-viewer-on-your-page" class="tsd-anchor-link">Put a viewer on your page<a href="#put-a-viewer-on-your-page" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>Register the element once, then use it anywhere. The string is the element's
 text content: inline, copyable, and it degrades to plain text without JS.</p>

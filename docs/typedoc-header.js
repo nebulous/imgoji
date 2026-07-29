@@ -6,12 +6,13 @@
     if (document.querySelector('.site-header')) return;
     const h = document.createElement('header');
     h.className = 'site-header';
+    const base = document.documentElement.dataset.base || './';
     h.innerHTML =
-      '<a class="brand" href="../index.html"><span class="mark" aria-hidden="true">🖼</span> imgoji</a>' +
+      '<a class="brand" href="' + base + '../index.html"><span class="mark" aria-hidden="true">🖼</span> imgoji</a>' +
       '<div class="header-right">' +
         '<nav aria-label="Library">' +
-          '<a href="index.html">docs</a>' +
-          '<a href="../paper.html">paper</a>' +
+          '<a href="' + base + 'index.html">docs</a>' +
+          '<a href="' + base + '../paper.html">paper</a>' +
           '<a href="https://github.com/nebulous/imgoji">github</a>' +
         '</nav>' +
         '<div class="header-tools"></div>' +

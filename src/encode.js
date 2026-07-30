@@ -130,7 +130,7 @@ export class Encoder {
     const C = this.compare;
     const DEDUP = this.dedup ?? (typeof window !== 'undefined' && window.IMGOJI_DEDUP) ?? 16;
     const list = this.emojiList || (typeof window !== 'undefined' && window.IMGOJI_EMOJI) || [];
-    const { scale, vshift, font } = this.glyphs;
+    const { scale, font } = this.glyphs;
     const gctx = this._gctx;
     gctx.textAlign = 'center'; gctx.textBaseline = 'middle';
     gctx.font = `${Math.round(C * scale)}px ${font}`;
@@ -140,7 +140,7 @@ export class Encoder {
     const tintColor = {};
     for (const ach of TINT_ANCHORS) {
       gctx.clearRect(0, 0, C, C);
-      gctx.fillText(ach, C / 2, C / 2 + C * scale * vshift);
+      renderEmojiAt(gctx, ach, C, this.glyphs);
       const ad = gctx.getImageData(0, 0, C, C).data;
       let r = 0, g = 0, b = 0, n = 0;
       for (let j = 0; j < ad.length; j += 4) if (ad[j + 3] > 40) { r += ad[j]; g += ad[j + 1]; b += ad[j + 2]; n++; }
@@ -150,7 +150,7 @@ export class Encoder {
     for (let i = 0; i < list.length; i++) {
       const ch = String.fromCodePoint(list[i]);
       gctx.clearRect(0, 0, C, C);
-      gctx.fillText(ch, C / 2, C / 2 + C * scale * vshift);
+      renderEmojiAt(gctx, ch, C, this.glyphs);
       const d = gctx.getImageData(0, 0, C, C).data;
       if (ch === '⬛' || ch === '⬜') { const ic = ch === '⬛' ? 0 : 255; for (let j = 0; j < d.length; j += 4) if (d[j + 3] > 40) { d[j] = ic; d[j + 1] = ic; d[j + 2] = ic; } }
       let opaque = 0;
@@ -549,7 +549,7 @@ export class Encoder {
     this._ensureScratch();
     this.setSource(source);
     if (opts.bilateral) this.applyBilateral(2, opts.bilateral);   // edge-preserving smoothing of the match target
-    const key = this.compare + '|' + this.glyphs.scale + '|' + this.glyphs.vshift + '|' + (this.dedup ?? (typeof window !== 'undefined' && window.IMGOJI_DEDUP) ?? 16);
+    const key = this.compare + '|' + this.glyphs.scale + '|' + this.glyphs.hshift + '|' + this.glyphs.vshift + '|' + (this.dedup ?? (typeof window !== 'undefined' && window.IMGOJI_DEDUP) ?? 16);
     if (!this.palette.length || key !== this.paletteBuildKey) { await this.buildPalette(); this.paletteBuildKey = key; }
     const depth = opts.depth ?? 6;
     const seedStr = opts.seed || '';

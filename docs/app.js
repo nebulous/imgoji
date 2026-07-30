@@ -4,7 +4,7 @@
 //   - grid:   Encoder.rasterize(image, { cols, rows }) -> flat emoji grid
 //
 // Serve from the repo root so ../src/index.js and ../assets/emoji-list.js resolve.
-import { Encoder, splitGraphemes, rleExpand, encodePrefix } from '../src/index.js';
+import { Encoder, Renderer, MAX_RES, splitGraphemes, rleExpand, encodePrefix } from '../src/index.js';
 import { SemanticGrid } from '../src/semantic-grid.js';
 
 const $ = (id) => document.getElementById(id);
@@ -431,11 +431,67 @@ function copyText(text, btn) {
 // Render the view-tab default string once the emoji font is ready.
 fontsReady.then(() => { const v = $('renderInput').value.trim(); if (v) setRender(v); });
 
+// ---- click-to-zoom: render the string at MAX_RES in a fit-to-screen modal ----
+// Skipped (and no zoom cursor) when the on-page viewer already renders near
+// MAX_RES, since the modal could not exceed what the default canvas shows.
+const ZOOM_THRESHOLD = 0.85;            // skip when renderSize >= this × MAX_RES
+let zoomResizeT = 0;
+const zoomable = (v) => !!(v.value && v.renderSize < ZOOM_THRESHOLD * MAX_RES);
+function refreshZoomCursors() {
+  document.querySelectorAll('imgoji-viewer').forEach((v) => v.classList.toggle('zoomable', zoomable(v)));
+}
+function openZoom(viewer) {
+  const str = viewer.value; if (!str) return;
+  const alpha = parseFloat(viewer.getAttribute('alpha'));
+  const prevFocus = document.activeElement;
+  const overlay = document.createElement('div');
+  overlay.className = 'zoom-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Enlarged imgoji render. Press Escape to close.');
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = MAX_RES; canvas.className = 'zoom-canvas';
+  const loading = document.createElement('div'); loading.className = 'zoom-loading'; loading.textContent = 'rendering…';
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'zoom-close';
+  close.setAttribute('aria-label', 'Close enlarged view'); close.textContent = '×';
+  overlay.append(canvas, loading, close); document.body.append(overlay);
+  document.body.style.overflow = 'hidden';
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); dismiss(); } };
+  const dismiss = () => {
+    overlay.remove(); document.body.style.overflow = '';
+    document.removeEventListener('keydown', onKey);
+    if (prevFocus && prevFocus.focus) prevFocus.focus();
+  };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+  close.addEventListener('click', dismiss);
+  document.addEventListener('keydown', onKey);
+  close.focus();
+  // Decode is synchronous; defer one frame so the overlay paints before the heavy render.
+  requestAnimationFrame(() => {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const r = new Renderer();
+    if (!isNaN(alpha)) r.alpha = alpha;
+    try { r.decode(str, ctx, MAX_RES); } catch (e) { /* leave the canvas blank */ }
+    loading.remove();
+  });
+}
+function installZoom() {
+  document.querySelectorAll('imgoji-viewer').forEach((v) => {
+    v.addEventListener('click', () => { if (zoomable(v)) openZoom(v); });   // live check: stays correct even if the cursor hint lags
+    v.addEventListener('render', refreshZoomCursors);                       // viewer emits 'render' on content/res change
+  });
+  refreshZoomCursors();
+  window.addEventListener('resize', () => { clearTimeout(zoomResizeT); zoomResizeT = setTimeout(refreshZoomCursors, 150); });
+}
+
 function init() {
   // tabs
   document.querySelectorAll('.tabs button').forEach((b) =>
     b.addEventListener('click', () => switchTab(b.dataset.tab)));
   switchTab('view');
+
+  // click any imgoji render to enlarge it (skipped when already near max res)
+  installZoom();
 
   // detail slider label
   const detail = $('detail'), detailVal = $('detailVal');

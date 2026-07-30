@@ -8,4 +8,4 @@ export {
   rgbToLab, dE00, encBytes, deflateRawBytes,
   LEAF_MARKER, SKIP_MARKER, LEAF_MODE_MARKER, OP_LETTERS,
 } from './util.js';
-export { ImgojiViewer } from './viewer.js';
+export { ImgojiViewer, MAX_RES } from './viewer.js';

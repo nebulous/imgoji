@@ -285,3 +285,28 @@ input[type="checkbox"] { accent-color: var(--ink); width: 15px; height: 15px; }
   .site-header nav { gap: 0.7rem; }
   .viewer-wrap imgoji-viewer { width: 100%; height: auto; aspect-ratio: 1; }
 }
+
+/* ---- click-to-zoom modal on imgoji viewers ---- */
+imgoji-viewer.zoomable { cursor: zoom-in; }
+.zoom-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 9, 14, 0.86);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.zoom-overlay .zoom-canvas {
+  width: min(92vmin, 2048px); height: min(92vmin, 2048px);
+  image-rendering: auto; background: #000;
+  box-shadow: 0 12px 60px rgba(0, 0, 0, 0.55);
+}
+.zoom-overlay .zoom-loading {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: #d2d2d2; font: 600 0.95rem ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.02em;
+}
+.zoom-overlay .zoom-close {
+  position: absolute; top: 1rem; right: 1.25rem;
+  width: 2.4rem; height: 2.4rem; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14); color: #fff;
+  font: 600 1.6rem/1 ui-sans-serif, system-ui, sans-serif; cursor: pointer;
+}
+.zoom-overlay .zoom-close:hover { background: rgba(255, 255, 255, 0.26); }

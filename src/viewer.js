@@ -4,7 +4,7 @@
 import { Renderer } from './render.js';
 
 const WORK = 256;
-const MAX_RES = 2048;   // cap on internal render resolution (memory); otherwise display-aware
+export const MAX_RES = 2048;   // cap on internal render resolution (memory); otherwise display-aware
 
 /**
  * Drop-in custom element that renders an imgoji string to a canvas.
@@ -40,6 +40,8 @@ class ImgojiViewer extends HTMLElement {
     this._str = '';
     this._raf = 0;
     this._ro = null;            // ResizeObserver → re-render at display size
+    this._renderSize = WORK;    // last internal render resolution (read-only via renderSize)
+    this._renderSig = '';       // (length,res) signature; emit 'render' when it changes
     const root = this.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     style.textContent = `:host{display:inline-block;width:256px;height:256px;line-height:0}canvas{width:100%;height:100%;display:block;image-rendering:auto}`;
@@ -83,6 +85,8 @@ class ImgojiViewer extends HTMLElement {
   /** The imgoji string. Assigning it re-renders. @type {string} */
   set value(v) { this._str = v || ''; this._render(); }
   get value() { return this._str; }
+  /** Last internal render resolution (the square canvas backing-store side, px). Read-only. */
+  get renderSize() { return this._renderSize; }
 
   _render() {
     cancelAnimationFrame(this._raf);
@@ -103,8 +107,13 @@ class ImgojiViewer extends HTMLElement {
     const css = this._canvas.clientWidth || WORK;
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const S = Math.max(WORK, Math.min(MAX_RES, Math.round(css * dpr)));
+    this._renderSize = S;
     if (this._canvas.width !== S) { this._canvas.width = S; this._canvas.height = S; }
     this._renderer.decode(this._str, this._ctx, S, { prefix });
+    // Notify when content or resolution changes (not on every animation frame), so
+    // listeners such as a zoom affordance can refresh without polling.
+    const sig = this._str.length + '/' + S;
+    if (this._renderSig !== sig) { this._renderSig = sig; this.dispatchEvent(new Event('render')); }
   }
 }
 

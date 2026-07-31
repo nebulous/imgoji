@@ -4,7 +4,7 @@
 //   - grid:   Encoder.rasterize(image, { cols, rows }) -> flat emoji grid
 //
 // Serve from the repo root so ../src/index.js and ../assets/emoji-list.js resolve.
-import { Encoder, Renderer, MAX_RES, splitGraphemes, rleExpand, encodePrefix } from '../src/index.js';
+import { Encoder, Renderer, MAX_RES, splitGraphemes, rleExpand, encodePrefix, deflateRaw, inflateRaw, b64urlEncode, b64urlDecode } from '../src/index.js';
 import { SemanticGrid } from '../src/semantic-grid.js';
 
 const $ = (id) => document.getElementById(id);
@@ -428,8 +428,9 @@ function copyText(text, btn) {
   else done();
 }
 
-// Render the view-tab default string once the emoji font is ready.
-fontsReady.then(() => { const v = $('renderInput').value.trim(); if (v) setRender(v); });
+// Render the view-tab default string once the emoji font is ready (unless a
+// shared render is arriving via the URL fragment — loadFromFragment handles that).
+fontsReady.then(() => { if (/[#&?](z|s)=/.test(location.hash)) return; const v = $('renderInput').value.trim(); if (v) setRender(v); });
 
 // ---- click-to-zoom: render the string at MAX_RES in a fit-to-screen modal ----
 // Skipped (and no zoom cursor) when the on-page viewer already renders near
@@ -443,6 +444,8 @@ function refreshZoomCursors() {
 function openZoom(viewer) {
   const str = viewer.value; if (!str) return;
   const alpha = parseFloat(viewer.getAttribute('alpha'));
+  const prefixAttr = parseFloat(viewer.getAttribute('prefix'));
+  const prefix = isNaN(prefixAttr) ? 1 : prefixAttr;   // mirror the on-page viewer's current build level
   const prevFocus = document.activeElement;
   const overlay = document.createElement('div');
   overlay.className = 'zoom-overlay';
@@ -471,7 +474,7 @@ function openZoom(viewer) {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const r = new Renderer();
     if (!isNaN(alpha)) r.alpha = alpha;
-    try { r.decode(str, ctx, MAX_RES); } catch (e) { /* leave the canvas blank */ }
+    try { r.decode(str, ctx, MAX_RES, { prefix }); } catch (e) { /* leave the canvas blank */ }
     loading.remove();
   });
 }
@@ -484,6 +487,76 @@ function installZoom() {
   window.addEventListener('resize', () => { clearTimeout(zoomResizeT); zoomResizeT = setTimeout(refreshZoomCursors, 150); });
 }
 
+// ---- share: #z fragment links, .imgoji download/open ----------------------
+// The view tab is the share hub. Encode tabs bridge into it (quad → view) or
+// download directly (grid). Links are #z=<base64url(deflate-raw)> with optional
+// &a=<alpha>; on load, loadFromFragment decodes and renders.
+const SHARE_WARN = 8000;   // URL chars; above this some apps truncate — steer to Download
+const viewerAlpha = () => { const a = parseFloat($('viewer').getAttribute('alpha')); return isNaN(a) ? undefined : a; };
+async function shareLinkFor(str, alpha) {
+  const z = b64urlEncode(await deflateRaw(str));
+  const a = Number.isFinite(alpha) ? `&a=${alpha}` : '';
+  return `${location.href.split('#')[0]}#z=${z}${a}`;
+}
+async function copyLink(str, alpha, status) {
+  if (!str) { if (status) status.textContent = 'nothing to share yet'; return; }
+  let url;
+  try { url = await shareLinkFor(str, alpha); }
+  catch { alert("Your browser doesn't support the compression needed for share links."); return; }
+  try { await navigator.clipboard.writeText(url); }
+  catch { if (status) status.textContent = 'clipboard blocked — use Copy for the string'; return; }
+  if (status) status.textContent = url.length > SHARE_WARN
+    ? `link copied · ${url.length} chars (long — some apps truncate; Download is safer)`
+    : `link copied · ${url.length} chars`;
+}
+async function shareNative(str, alpha, status) {
+  if (!str) { if (status) status.textContent = 'nothing to share yet'; return; }
+  let url;
+  try { url = await shareLinkFor(str, alpha); }
+  catch { alert("Your browser doesn't support the compression needed for share links."); return; }
+  if (navigator.share) {
+    try { await navigator.share({ title: 'imgoji', text: 'an image made of emoji', url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  await copyLink(str, alpha, status);
+}
+function downloadStr(str, name, status) {
+  if (!str) { if (status) status.textContent = 'nothing to save yet'; return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([str], { type: 'text/plain;charset=utf-8' }));
+  a.download = name || 'imgoji.imgoji';
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  if (status) status.textContent = `saved ${a.download}`;
+}
+async function openImgFile(file) {
+  if (!file) return;
+  let str;
+  try { str = await file.text(); } catch { $('renderStatus').textContent = 'could not read file'; return; }
+  $('renderInput').value = str;
+  switchTab('view');
+  setRender(str);
+  $('renderStatus').textContent = `opened ${file.name}`;
+}
+// Decode a shared render from the URL fragment (#z deflated, #s raw; optional &a=alpha).
+async function loadFromFragment() {
+  await fontsReady;
+  const raw = location.hash;
+  if (!raw || raw.length < 3) return;
+  const p = new URLSearchParams(raw.startsWith('#') ? raw.slice(1) : raw);
+  let str = null, alpha, hadShare = false;
+  if (p.has('a')) { const a = parseFloat(p.get('a')); if (!isNaN(a)) alpha = a; }
+  try {
+    if (p.has('z')) { hadShare = true; str = new TextDecoder().decode(await inflateRaw(b64urlDecode(p.get('z')))); }
+    else if (p.has('s')) { hadShare = true; str = decodeURIComponent(p.get('s')); }
+  } catch (e) { str = null; }
+  if (!str) { if (hadShare) { setRender($('renderInput').value || ''); $('renderStatus').textContent = "couldn't load that link"; } return; }
+  if (Number.isFinite(alpha)) $('viewer').setAttribute('alpha', String(alpha));
+  $('renderInput').value = str;
+  switchTab('view');
+  setRender(str);
+}
+
 function init() {
   // tabs
   document.querySelectorAll('.tabs button').forEach((b) =>
@@ -492,6 +565,34 @@ function init() {
 
   // click any imgoji render to enlarge it (skipped when already near max res)
   installZoom();
+
+  // share hub (view tab): link, native share, download, open file
+  const curViewStr = () => $('renderInput').value.trim();
+  $('shareLink').addEventListener('click', () => copyLink(curViewStr(), viewerAlpha(), $('renderStatus')));
+  $('shareBtn').addEventListener('click', () => shareNative(curViewStr(), viewerAlpha(), $('renderStatus')));
+  $('downloadImg').addEventListener('click', () => downloadStr(curViewStr(), 'imgoji.imgoji', $('renderStatus')));
+  $('openImgBtn').addEventListener('click', () => $('openImg').click());
+  $('openImg').addEventListener('change', (e) => openImgFile(e.target.files[0]));
+  const viewerEl = $('viewer');   // drag-drop a .imgoji file onto the viewer
+  viewerEl.addEventListener('dragover', (e) => { e.preventDefault(); viewerEl.classList.add('drag'); });
+  viewerEl.addEventListener('dragleave', () => viewerEl.classList.remove('drag'));
+  viewerEl.addEventListener('drop', (e) => {
+    e.preventDefault(); viewerEl.classList.remove('drag');
+    const f = [...(e.dataTransfer?.files || [])].find((x) => x.name.endsWith('.imgoji') || x.type === '' || x.type.startsWith('text'));
+    if (f) openImgFile(f);
+  });
+  // bridge encode results to the hub + direct downloads
+  $('quadToView').addEventListener('click', () => {
+    const s = $('out').textContent.trim();
+    if (!s) { $('status').textContent = 'encode something first'; return; }
+    const a = parseFloat($('reconViewer').getAttribute('alpha'));
+    if (!isNaN(a)) $('viewer').setAttribute('alpha', String(a));
+    $('renderInput').value = s; switchTab('view'); setRender(s);
+  });
+  $('quadDownload').addEventListener('click', () => downloadStr($('out').textContent.trim(), 'imgoji.imgoji', $('status')));
+  $('gridDownload').addEventListener('click', () => downloadStr($('gridOut').textContent.trim(), 'imgoji-grid.txt', $('gridStatus')));
+  loadFromFragment();   // receive a shared render from the URL fragment on load
+  window.addEventListener('hashchange', loadFromFragment);
 
   // detail slider label
   const detail = $('detail'), detailVal = $('detailVal');
@@ -540,7 +641,6 @@ function init() {
     setEncodeCount(p);
     encRaf = requestAnimationFrame(() => applyEncodePrefix(p));
   });
-  $('renderBtn').addEventListener('click', () => setRender($('renderInput').value));
   // prefix slider: scrub the decoded fraction; glyph count updates instantly, the
   // (heavier) decode is coalesced to one per frame
   $('prefix').addEventListener('input', () => {

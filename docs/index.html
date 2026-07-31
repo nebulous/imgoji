@@ -83,8 +83,12 @@
       <div class="render-side">
         <textarea id="renderInput" class="string-in" rows="6" spellcheck="false" placeholder="paste or edit an imgoji string… it renders as you type" aria-label="imgoji string">🟨🖼️🌞🌈🌵🌻-☁️-5☁️🪁s2x81🛩️s2y6x2👫s2x8y9🎩s3rFxCy6🎈s1x8</textarea>
         <div class="render-actions">
-          <button type="button" class="btn primary" id="renderBtn">Render</button>
+          <button type="button" class="btn primary sm" id="shareBtn">Share</button>
+          <button type="button" class="btn ghost sm" id="shareLink">Link</button>
+          <button type="button" class="btn ghost sm" id="downloadImg">Download</button>
+          <button type="button" class="btn ghost sm" id="openImgBtn">Open</button>
           <button type="button" class="btn ghost sm" id="copyRender">Copy</button>
+          <input type="file" id="openImg" accept=".imgoji,text/plain" hidden>
           <span class="status" id="renderStatus" role="status" aria-live="polite"></span>
         </div>
       </div>
@@ -184,7 +188,7 @@
     </div>
 
     <div class="outwrap">
-      <div class="out-head"><span>string</span><button type="button" class="btn ghost sm" id="copyStr">Copy</button></div>
+      <div class="out-head"><span>string</span><button type="button" class="btn ghost sm" id="quadToView">→ view</button><button type="button" class="btn ghost sm" id="quadDownload">Download</button><button type="button" class="btn ghost sm" id="copyStr">Copy</button></div>
       <output id="out" class="out" aria-label="encoded imgoji string"></output>
     </div>
   </section>
@@ -245,7 +249,7 @@
 
     <div class="full-bleed">
       <div class="outwrap dark">
-        <div class="out-head"><span>grid</span><button type="button" class="btn ghost sm" id="copyGrid">Copy</button></div>
+        <div class="out-head"><span>grid</span><button type="button" class="btn ghost sm" id="gridDownload">Download</button><button type="button" class="btn ghost sm" id="copyGrid">Copy</button></div>
         <pre id="gridOut" class="grid-out"></pre>
       </div>
     </div>

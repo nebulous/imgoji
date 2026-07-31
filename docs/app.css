@@ -310,3 +310,7 @@ imgoji-viewer.zoomable { cursor: zoom-in; }
   font: 600 1.6rem/1 ui-sans-serif, system-ui, sans-serif; cursor: pointer;
 }
 .zoom-overlay .zoom-close:hover { background: rgba(255, 255, 255, 0.26); }
+
+/* ---- share: viewer drag-drop highlight + action row wrap ---- */
+imgoji-viewer.drag { outline: 3px solid #1a3f8a; outline-offset: -3px; }
+.render-actions { flex-wrap: wrap; row-gap: 0.3rem; }

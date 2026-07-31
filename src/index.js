@@ -5,7 +5,7 @@ export { Renderer, renderString } from './render.js';
 export { GlyphCache, renderEmojiAt, TINT_ANCHORS, ANCHOR_EMOJI, EMOJI_FONT } from './glyph.js';
 export {
   splitGraphemes, rleCompress, rleExpand, isDSLStart, encodePrefix,
-  rgbToLab, dE00, encBytes, deflateRawBytes,
+  rgbToLab, dE00, encBytes, deflateRawBytes, deflateRaw, inflateRaw, b64urlEncode, b64urlDecode,
   LEAF_MARKER, SKIP_MARKER, LEAF_MODE_MARKER, OP_LETTERS,
 } from './util.js';
 export { ImgojiViewer, MAX_RES } from './viewer.js';

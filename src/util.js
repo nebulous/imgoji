@@ -245,15 +245,45 @@ export function judgeDistances(a, b) {
 // ---- Byte sizes ----------------------------------------------------------
 export const encBytes = s => new TextEncoder().encode(s).length;
 
-// deflate-raw size via the browser's CompressionStream (stacks on RLE, so this
-// is the real transmissible size). Returns Infinity if unavailable.
-export async function deflateRawBytes(str) {
-  try {
-    const cs = new CompressionStream('deflate-raw');
-    const w = cs.writable.getWriter();
-    w.write(new TextEncoder().encode(str)); w.close();
-    const r = cs.readable.getReader(); let n = 0;
-    for (;;) { const { done, value } = await r.read(); if (done) break; n += value.length; }
-    return n;
-  } catch { return Infinity; }
+// deflate-raw bytes via the browser's CompressionStream (stacks on RLE). Used by
+// the share link (#z=<base64url(deflate-raw)>).
+export async function deflateRaw(str) {
+  const cs = new CompressionStream('deflate-raw');
+  const w = cs.writable.getWriter();
+  w.write(new TextEncoder().encode(str)); w.close();
+  const r = cs.readable.getReader();
+  const chunks = []; let n = 0;
+  for (;;) { const { done, value } = await r.read(); if (done) break; chunks.push(value); n += value.length; }
+  const out = new Uint8Array(n); let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
 }
+// Inverse of deflateRaw, via DecompressionStream.
+export async function inflateRaw(bytes) {
+  const ds = new DecompressionStream('deflate-raw');
+  const w = ds.writable.getWriter();
+  w.write(bytes); w.close();
+  const r = ds.readable.getReader();
+  const chunks = []; let n = 0;
+  for (;;) { const { done, value } = await r.read(); if (done) break; chunks.push(value); n += value.length; }
+  const out = new Uint8Array(n); let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
+}
+// deflate-raw size (the real transmissible byte count). Returns Infinity if unavailable.
+export async function deflateRawBytes(str) {
+  try { return (await deflateRaw(str)).length; } catch { return Infinity; }
+}
+// URL-safe base64 (no padding) for fragment payloads.
+export const b64urlEncode = (bytes) => {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+export const b64urlDecode = (s) => {
+  const pad = s.length % 4 ? '='.repeat(4 - (s.length % 4)) : '';
+  const bin = atob(String(s).replace(/-/g, '+').replace(/_/g, '/') + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};

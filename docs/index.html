@@ -91,6 +91,14 @@
           <input type="file" id="openImg" accept=".imgoji,text/plain" hidden>
           <span class="status" id="renderStatus" role="status" aria-live="polite"></span>
         </div>
+        <details class="server-share">
+          <summary>Short link / public gallery</summary>
+          <p class="server-note">Short links and gallery submissions send your imgoji to the imgoji server. Short links expire in 90 days; gallery entries are public.</p>
+          <label class="chk"><input type="checkbox" id="optShort"> Short link (90 days)</label>
+          <label class="chk"><input type="checkbox" id="optGallery"> Submit to the public gallery</label>
+          <button type="button" class="btn ghost sm" id="serverCreate">Create</button>
+          <span class="status" id="serverStatus" role="status" aria-live="polite"></span>
+        </details>
       </div>
     </div>
 

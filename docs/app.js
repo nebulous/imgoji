@@ -10,6 +10,9 @@ import { SemanticGrid } from '../src/semantic-grid.js';
 const $ = (id) => document.getElementById(id);
 const WORK = 256;
 const fontsReady = (typeof document !== 'undefined' && document.fonts) ? document.fonts.ready : Promise.resolve();
+// The deployed Cloudflare Worker that shortens imgoji share links. Empty until you
+// deploy shortener/ and paste its URL here (see shortener/README.md).
+const SHORTENER = 'https://imgoji.nebulous-31a.workers.dev';   // deployed Cloudflare Worker (shortener/)
 
 // Off-screen 256x256 source the encode/grid tabs share; #orig mirrors it as the
 // picker preview.
@@ -591,6 +594,27 @@ function init() {
   });
   $('quadDownload').addEventListener('click', () => downloadStr($('out').textContent.trim(), 'imgoji.imgoji', $('status')));
   $('gridDownload').addEventListener('click', () => downloadStr($('gridOut').textContent.trim(), 'imgoji-grid.txt', $('gridStatus')));
+  // opt-in server share (short link / public gallery). Stores the imgoji server-side,
+  // so it is explicitly opt-in with a note in the disclosure panel.
+  $('serverCreate').addEventListener('click', async () => {
+    const status = $('serverStatus');
+    if (!SHORTENER) { status.textContent = 'shortener not configured'; return; }
+    const str = $('renderInput').value.trim();
+    if (!str) { status.textContent = 'nothing to share yet'; return; }
+    const wantShort = $('optShort').checked, wantGallery = $('optGallery').checked;
+    if (!wantShort && !wantGallery) { status.textContent = 'pick at least one'; return; }
+    status.textContent = 'creating…';
+    try {
+      const longUrl = await shareLinkFor(str, viewerAlpha());
+      const r = await fetch(SHORTENER + '/s', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: longUrl, short: wantShort, gallery: wantGallery }) });
+      const out = await r.json();
+      if (!r.ok) throw new Error(out.error || 'failed');
+      const bits = [];
+      if (out.short) { try { await navigator.clipboard.writeText(out.short); } catch {} bits.push(`short link (copied): ${out.short}`); }
+      if (out.gallery) bits.push('submitted to gallery');
+      status.textContent = bits.join(' · ');
+    } catch (e) { status.textContent = 'could not create: ' + (e.message || e); }
+  });
   loadFromFragment();   // receive a shared render from the URL fragment on load
   window.addEventListener('hashchange', loadFromFragment);
 

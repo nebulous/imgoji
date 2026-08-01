@@ -90,6 +90,27 @@ resolve. http is required rather than file://, because the encoder loads
 `earth.jpg` and reads its pixels via `getImageData`. A same-origin server keeps
 the canvas untainted.
 
+## Short links (optional, self-hosted)
+
+The docs tool can shorten share links through a small URL shortener, so a long
+`#z=` link fits channels with tight length limits such as SMS. This is optional
+and deployment-specific. It is not part of the codec, and the site works fully
+without it. The reference shortener is a Cloudflare Worker plus KV. Its source
+is kept out of this repo.
+
+To run your own, implement one endpoint:
+
+    POST /s  { "url": "<imgoji #z= or #s= link>", "short": true, "gallery": true }
+             -> { "short"?: ".../<code>", "gallery"?: ".../g/<code>" }
+
+Store `url` under a random code and 302-redirect `GET /<code>` (and
+`GET /g/<code>` for gallery entries) back to it. Restrict accepted URLs to your
+own imgoji origin so the shortener can only redirect back to the app. Expiry and
+gallery visibility are yours to decide. Point the docs site at your worker by
+setting `SHORTENER` in `docs/app.js`. With it `''`, the "Short link / public
+gallery" panel reports "shortener not configured" and the rest of the site is
+serverless.
+
 ## As a library
 
 The codec ships as importable ES modules in `src/`, with no build step. The

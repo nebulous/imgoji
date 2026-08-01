@@ -105,26 +105,27 @@
     <p>We present <b>imgoji</b>, a lossy image codec whose encoded form is a
     string of Unicode emoji. The representation targets channels that carry text
     but not binary data: chat messages, social posts, and URLs. A square image is
-    approximated by a quadtree of blended glyphs; each cell selects the emoji
+    approximated by a quadtree of blended glyphs. Each cell selects the emoji
     that, blended over its parent's accumulated render, best matches the source
-    region, and the cell's position in a breadth-first traversal implies its
+    region. The cell's position in a breadth-first traversal implies its spatial
     region, so no per-cell coordinates are stored. We show that the fixed-ratio
     alpha blend <span class="math">A&prime; = (1&minus;&alpha;)A + &alpha;E</span>
-    makes the reconstruction converge with depth (monotonically, on our corpus), where a pure
-    replace operator plateaus at the convex hull of the glyph palette. Breadth-first
-    order yields a prefix property: any truncation of the string is a valid,
-    coarser frame. Tree structure is chosen by cost-complexity pruning (BFOS),
-    which consistently outperforms greedy thresholding at every operating point
-    and budget we tested. An optional semantic layer runs two foundation
-    models in the browser (CLIP for whole-image classification, OWL-ViT for
-    object detection) to pin detected objects as base-layer sprites, validated by
-    a greedy &Delta;E00 filter that retains a sprite only when it lowers regional
-    error, tested over all sixteen rotations. We report rate-distortion results on
-    a six-image corpus, the convergence behavior, and negative findings: a
-    matcher-metric re-test under a four-family judge ensemble (&Delta;E00, OKLab,
-    Jzazbz, CAM16-UCS) confirms the prior CIE76 result was not a CIELAB-judge
-    artifact, and a palette coverage gap in muted cool hues is inherent to the
-    emoji corpus, not recoverable by metric choice.</p>
+    makes the reconstruction converge with depth (monotonically, on our corpus).
+    A pure replace operator, by contrast, plateaus at the convex hull of the glyph
+    palette. Breadth-first order yields a prefix property: any truncation of the
+    string is a valid, coarser frame. Quadtree structure is chosen by cost-complexity
+    pruning (BFOS), which consistently outperforms greedy thresholding at every
+    operating point and budget we tested. An optional semantic layer runs two
+    foundation models in the browser: CLIP for whole-image classification and
+    OWL-ViT for object detection. Detected objects are pinned as base-layer
+    sprites. A greedy &Delta;E00 filter retains a sprite only when it lowers
+    regional error. Each candidate is tested over all sixteen rotations. We
+    report rate-distortion results on a six-image corpus, characterize convergence
+    behavior, and present negative findings. A re-test of the matcher metric under a
+    four-family judge ensemble (&Delta;E00, OKLab, Jzazbz, CAM16-UCS) confirms
+    that the prior CIE76 result was not a CIELAB-judge artifact. A palette
+    coverage gap in muted cool hues is inherent to the emoji corpus and not
+    recoverable by metric choice.</p>
     <p class="keywords"><b>Keywords:</b> image coding, progressive transmission,
     text representation, emoji, quadtree, rate-distortion optimization, alpha
     blending, vision-language models.</p>
@@ -146,13 +147,15 @@ font containing hundreds of color pictographs: emoji. The codec references those
 glyphs by codepoint and composites them to approximate a source image. The
 encoded artifact is a plain string of emoji. It is short enough to paste into a
 message, survives any text-safe transport, and renders back to an image in any
-browser without a bundled asset, because the browser already has the glyphs.</p>
+browser without a bundled asset, because the browser already has the glyphs. We use 'imgoji' to refer to both the codec and the resulting emoji string; the
+'representation' is the mathematical model (quadtree + blend); the 'string grammar'
+is the concrete serialization.</p>
 <p>The representation is lossy and low-rate. It does not compete with JPEG at
 matched byte budgets on fidelity. It competes on a property JPEG cannot offer:
 the bitstream itself is human-legible text that composes an image directly from a
 universal preinstalled glyph set. The contribution is the channel, not the
 compression ratio.</p>
-<p class="tblcap">Where imgoji sits among image representations.</p>
+<p class="tblcap">Where imgoji sits among common image representations.</p>
 <table class="results">
 <thead><tr><th class="lbl">representation</th><th>transport</th><th>progressive</th><th>human-readable</th><th>asset-free</th></tr></thead>
 <tbody>
@@ -163,15 +166,14 @@ compression ratio.</p>
 </tbody>
 </table>
 <p>This paper makes the codec's design explicit and reports measured behavior. We
-contribute: (i) a convergent blend model over a position-implicit quadtree with a
-provable prefix property; (ii) cost-complexity (BFOS) pruning for the tree,
+contribute: (i) a convergent blend model over a position-implicit quadtree, with
+a provable prefix property; (ii) cost-complexity (BFOS) pruning for the quadtree,
 benchmarked against greedy subdivision; (iii) a compact, self-delimiting string
-grammar whose shorter prefixes remain valid; (iv) a browser-resident semantic
-layer using CLIP and OWL-ViT to place object-correct base glyphs, gated by a
-greedy error filter; and (v) an evaluation including negative results, showing
-where the codec is bounded,
-including a controlled re-test of matcher color metrics under a four-family
-    judge ensemble, and an inherent palette gap.</p>
+grammar whose shorter prefixes remain valid images; (iv) a browser-resident
+semantic layer that uses CLIP and OWL-ViT to place object-correct base glyphs,
+gated by a greedy error filter; and (v) an evaluation including negative results:
+a controlled re-test of the matcher metric under a four-family judge ensemble,
+and an analysis of an inherent palette gap.</p>
 
 <figure>
 <svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="codec pipeline" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="12"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs><text x="150" y="18" text-anchor="middle" font-style="italic" fill="#5a5a55">encode</text><rect x="40" y="26" width="220" height="34" rx="4" fill="#fbfaf6" stroke="#444"/><text x="150" y="48" text-anchor="middle">Source image (256&sup2;)</text><line x1="150" y1="60" x2="150" y2="76" stroke="#444" stroke-width="1.4" marker-end="url(#ah)"/><rect x="40" y="78" width="220" height="34" rx="4" fill="#fbfaf6" stroke="#444"/><text x="150" y="100" text-anchor="middle">Grow full quadtree (BFS)</text><line x1="150" y1="112" x2="150" y2="128" stroke="#444" stroke-width="1.4" marker-end="url(#ah)"/><rect x="40" y="130" width="220" height="34" rx="4" fill="#fbfaf6" stroke="#444"/><text x="150" y="152" text-anchor="middle">Prune &mdash; BFOS cost-complexity</text><line x1="150" y1="164" x2="150" y2="180" stroke="#444" stroke-width="1.4" marker-end="url(#ah)"/><rect x="34" y="182" width="232" height="36" rx="4" fill="#eef1f7" stroke="#1a3f8a" stroke-width="1.5"/><text x="150" y="205" text-anchor="middle" font-weight="700">imgoji string</text><line x1="150" y1="218" x2="150" y2="238" stroke="#444" stroke-width="1.4" marker-end="url(#ah)"/><text x="150" y="254" text-anchor="middle" font-style="italic" fill="#5a5a55">decode</text><rect x="40" y="262" width="220" height="34" rx="4" fill="#fbfaf6" stroke="#444"/><text x="150" y="284" text-anchor="middle">Alpha-composite, stream order</text><line x1="150" y1="296" x2="150" y2="312" stroke="#444" stroke-width="1.4" marker-end="url(#ah)"/><rect x="40" y="314" width="220" height="34" rx="4" fill="#fbfaf6" stroke="#444"/><text x="150" y="336" text-anchor="middle">Reconstruction</text></svg>
@@ -192,7 +194,7 @@ progression.</p>
 <p><b>Rate-distortion optimization.</b> Selecting where to spend bits is a
 Lagrangian problem. Sullivan and Wiegand formalized rate-distortion optimization
 (RDO) for video coding<sup>[12]</sup>: minimize <span class="math">D +
-&lambda;R</span> over coding decisions. imgoji applies the same principle to
+&lambda;R</span> over coding decisions (D is distortion, R is rate). imgoji applies the same principle to
 quadtree pruning via the BFOS cost-complexity algorithm of Breiman et
 al.<sup>[2]</sup>, which produces a sequence of nested subtrees optimal at each
 complexity. Classical JPEG<sup>[13]</sup> and its block-DCT successors spend RDO
@@ -200,18 +202,18 @@ effort per transform coefficient; imgoji spends it per quadtree node.</p>
 <p><b>Text and ASCII art.</b> Text-based image rendering predates the web, from
 line-printer art to sixel and ANSI renderers. These map luminance to character
 density. imgoji differs by using color pictographs that carry their own
-chrominance, and by treating the string as an encoded stream with a decoder, not
-a literal glyph-for-pixel map.</p>
+chrominance, and by treating the string as an encoded stream with a decoder, rather than as
+a literal glyph-for-pixel map like traditional ASCII art.</p>
 <p><b>Emoji semantics.</b> Eisner et al. learned emoji embeddings
 (emoji2vec)<sup>[5]</sup> from description text, establishing that emoji carry
-machine-usable semantic content. imgoji uses CLIP<sup>[9]</sup> to rank palette
-labels against an image and OWL-ViT<sup>[7]</sup> to localize them, then projects
-detections into the codec's coordinate space. The vision-language models run
+machine-usable semantic content. imgoji uses CLIP<sup>[9]</sup> to rank the keyword labels associated with palette
+glyphs against an image, and OWL-ViT<sup>[7]</sup> to localize them. Detections are
+projected into the codec's coordinate space. The vision-language models run
 client-side via Transformers.js<sup>[1]</sup> (WebGPU or WASM), so no image leaves the device.</p>
 <p><b>Color difference.</b> We report quality in CIEDE2000 (&Delta;E00)<sup>[11]</sup>
-as an independent judge, always computed in CIELAB regardless of the matcher's
-own metric, following the methodology of constructing an external evaluator that
-the encoder cannot optimize directly.</p>
+as an independent judge. It is always computed in CIELAB, regardless of the
+matcher metric. This follows the methodology of constructing an external
+evaluator that the encoder cannot optimize directly.</p>
 
 <p class="tblcap">Notation used throughout.</p>
 <table class="results">
@@ -251,15 +253,16 @@ working canvas). The traversal is breadth-first.</p>
 <p>Each cell beyond the root blends its chosen emoji <span class="math">E</span>
 over the parent's accumulated render <span class="math">A</span> for that region:</p>
 <p class="eq"><span class="math">A&prime; = (1&minus;&alpha;)A + &alpha;E</span><span class="lab">(1)</span></p>
-<p>at a fixed ratio (<span class="math">&alpha; = 0.7</span> by default). The root
+<p>Intuitively, each cell adds a fraction <span class="math">&alpha;</span> of its chosen emoji's color on top of what its ancestors have already painted. The blend uses a fixed ratio (<span class="math">&alpha; = 0.7</span> by default). The root
 takes <span class="math">&alpha; = 1</span>. Each cell picks the emoji minimizing
 residual against the source over its region. <p>The decoder is ordinary source-over alpha compositing; the reconstruction
 therefore renders to SVG with no custom decode code (the browser composites each
 glyph as a <code>&lt;text&gt;</code> element at opacity <span class="math">&alpha;</span>).</p>
 <p>The blend operator is fundamental to the codec. Because alpha blending is a
 convex combination at every level, the color at a pixel is a weighted chain from
-the root to the finest covering cell; the reconstruction therefore lies inside
-the convex hull of the glyph palette. A pure replace operator lacks this: once
+the root to the finest covering cell. The reconstruction therefore lies inside
+the convex hull of the glyph palette. A pure replace operator lacks this
+property: once
 one glyph covers a pixel the output is confined to that glyph's mean color, and
 the approximation plateaus. Empirically, blending shrinks the residual at every
 depth on each image we tested (Table 1).</p>
@@ -271,8 +274,8 @@ depth on each image we tested (Table 1).</p>
 on the reference image (NASA Earthrise, 1000&times;1000) as depth grows (plotted in Figure 2). The
 approximation improves at every depth from 1 onward. The depth-0 value
 (145) exceeds the mean-color baseline (142): the single best whole-image emoji is
-slightly pixel-poorer than a flat mean fill, a real cost of placing a glyph at the
-root that refinement must recover.</p>
+slightly worse than a flat mean fill. This is a real cost of placing a glyph at
+the root that subsequent refinement must recover.</p>
 
 <p class="tblcap">Table 1: Earthrise reconstruction RMS vs. depth (no seed, &alpha;=0.7, RGB).</p>
 <table class="results">
@@ -293,7 +296,7 @@ root that refinement must recover.</p>
 
 <figure>
 <svg viewBox="0 0 560 340" preserveAspectRatio="xMidYMid meet" role="img" aria-label="convergence" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="11"><line x1="52" y1="296.0" x2="546" y2="296.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="299.5" text-anchor="end">0</text><line x1="52" y1="202.7" x2="546" y2="202.7" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="206.2" text-anchor="end">50</text><line x1="52" y1="109.3" x2="546" y2="109.3" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="112.8" text-anchor="end">100</text><line x1="52" y1="16.0" x2="546" y2="16.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="19.5" text-anchor="end">150</text><line x1="52.0" y1="296" x2="52.0" y2="300" stroke="#555"/><text x="52.0" y="312" text-anchor="middle">0</text><line x1="216.7" y1="296" x2="216.7" y2="300" stroke="#555"/><text x="216.7" y="312" text-anchor="middle">2</text><line x1="381.3" y1="296" x2="381.3" y2="300" stroke="#555"/><text x="381.3" y="312" text-anchor="middle">4</text><line x1="546.0" y1="296" x2="546.0" y2="300" stroke="#555"/><text x="546.0" y="312" text-anchor="middle">6</text><line x1="52" y1="16" x2="52" y2="296" stroke="#444" stroke-width="1"/><line x1="52" y1="296" x2="546" y2="296" stroke="#444" stroke-width="1"/><text x="299" y="334" text-anchor="middle">quadtree depth</text><text x="14" y="156" text-anchor="middle" transform="rotate(-90 14 156)">reconstruction RMS (0–255)</text><line x1="52" y1="30.9" x2="546" y2="30.9" stroke="#999" stroke-width="1" stroke-dasharray="4 3"/><text x="546" y="26.9" text-anchor="end" fill="#999">mean-color baseline (142)</text><polyline points="52.0,25.3 134.3,58.9 216.7,96.3 299.0,122.4 381.3,154.1 463.7,182.1 546.0,197.1" fill="none" stroke="#000000" stroke-width="1.6" stroke-linejoin="round"/><circle cx="52.0" cy="25.3" r="2.6" fill="#000000"/><circle cx="134.3" cy="58.9" r="2.6" fill="#000000"/><circle cx="216.7" cy="96.3" r="2.6" fill="#000000"/><circle cx="299.0" cy="122.4" r="2.6" fill="#000000"/><circle cx="381.3" cy="154.1" r="2.6" fill="#000000"/><circle cx="463.7" cy="182.1" r="2.6" fill="#000000"/><circle cx="546.0" cy="197.1" r="2.6" fill="#000000"/><polyline points="546.0,200.8" fill="none" stroke="#CC79A7" stroke-width="1.6" stroke-linejoin="round"/><circle cx="546.0" cy="200.8" r="2.6" fill="#CC79A7"/><line x1="410" y1="26" x2="426" y2="26" stroke="#CC79A7" stroke-width="1.6"/><circle cx="418" cy="26" r="2.6" fill="#CC79A7"/><text x="430" y="29.5">+ color anchors (d6)</text><line x1="459.6" y1="41" x2="475.6" y2="41" stroke="#000000" stroke-width="1.6"/><circle cx="467.6" cy="41" r="2.6" fill="#000000"/><text x="479.6" y="44.5">RMS vs depth</text></svg>
-<figcaption class="cap"><b>Figure 2.</b> Reconstruction RMS versus quadtree depth on Earthrise (no seed, α=0.7), the same data as Table 1. The approximation improves monotonically from depth 1. The depth-0 point sits just above the mean-color baseline: the single root glyph is pixel-poorer than a flat mean fill, a cost refinement must recover. Adding sixteen solid color-anchor glyphs (the pink point) drops depth 6 from 53 to 51 by extending the palette's convex hull to the extremes.</figcaption>
+<figcaption class="cap"><b>Figure 2.</b> Reconstruction RMS versus quadtree depth on Earthrise (no seed, α=0.7), the same data as Table 1. Lower RMS is better. The approximation improves monotonically from depth 1. The depth-0 point sits just above the mean-color baseline: the single root glyph is slightly worse than a flat mean fill, a cost refinement must recover. Adding sixteen solid color-anchor glyphs (the pink point) drops depth 6 from 53 to 51 by extending the palette's convex hull to the extremes.</figcaption>
 </figure>
 
 <p><b>Theorem 1 (Prefix validity).</b> Any prefix of an imgoji stream decodes to a
@@ -330,11 +333,11 @@ black was unreachable. Adding sixteen anchors extends the hull to the extremes.
 On Earthrise this drops depth-6 RMS from 53 to 51 (Table 1). The gain is modest
 because the textured earth and moon also bound the residual, and anchors do not
 help there. For matching the palette is deduplicated by mean color and texture,
-collapsing 1,076 glyphs to roughly 525 representatives.</p>
+collapsing 1,076 codepoints to roughly 525 representatives.</p>
 </section>
 
 <section>
-<h2><span class="n">6.</span> Tree structure: cost-complexity pruning</h2>
+<h2><span class="n">6.</span> Quadtree structure: cost-complexity pruning</h2>
 <p>The quadtree must decide where to subdivide. A fixed depth wastes tokens on
 smooth regions and under-resolves detail. imgoji grows the full quadtree once and
 prunes by cost-complexity, the BFOS algorithm<sup>[2]</sup>. At each internal
@@ -345,9 +348,9 @@ the Lagrangian <span class="math">D + &lambda;R</span>:</p>
 is the token rate of the subtree versus a single leaf. The threshold slider maps
 to <span class="math">&lambda; = 10<sup>threshold/25</sup></span>, so sweeping it
 walks the BFOS pruning sequence. Because pruning is cheap relative to growth, the
-grown tree is cached per source image and encode parameters; retuning (a new
-threshold or byte target) re-prunes the cached tree in roughly 250 ms after a
-first growth of about 1.9 s for the 5,461-node tree.</p>
+grown quadtree is cached per source image and encode parameters; retuning (a new
+threshold or byte target) re-prunes the cached quadtree in roughly 250 ms after a
+first growth of about 1.9 s for the 5,461-node quadtree.</p>
 <p>Table 2 compares BFOS against greedy threshold subdivision (subdivide when a
 cell's residual exceeds a threshold) at matched deflated-byte budgets on a
 portrait. BFOS wins at every operating point, and the gap widens at low budgets
@@ -373,12 +376,12 @@ RMS, a strict Pareto win on three of five images.</p>
 </section>
 
 <section>
-<h2><span class="n">7.</span> The string grammar</h2>
+<h2><span class="n">7.</span> Grammar</h2>
 <p>The codec's native serialization is a position-implicit breadth-first string.
 One invariant carries the grammar: <i>lowercase ASCII letters are operators;
 uppercase hex digits are data.</i> A cell is either a list of positioned DSL
 sprites (a glyph followed by one or more transform ops) or a single full-size
-glyph plus an optional leaf marker. Run-length encoding compresses maximal runs
+glyph plus an optional leaf marker. For example, a plain cell is one glyph (<code>🖼️</code>), while a sprite cell is a glyph followed by transform ops (e.g. <code>🖼️s2x8</code>, scaled and translated). Run-length encoding compresses maximal runs
 of identical graphemes to the grapheme followed by a hex count; a run of one is
 just the grapheme. Counts, op values, and the body share the
 <code>[0-9A-F]</code> alphabet but never collide, because hex following a
@@ -387,19 +390,20 @@ and the quadtree body itself contains no lowercase letters.</p>
 <p>Values are variable-width. More hex digits mean a finer value, not a larger
 range, and a shorter prefix of the digits is a valid coarser approximation. The
 prefix property therefore propagates into the transform values themselves. The
-translate op is the only signed quantity, encoded no-zero sign-magnitude so the
-range stays &plusmn;0.5 at every width and width controls granularity alone.</p>
+translate op is the only signed quantity. It is encoded no-zero sign-magnitude,
+so the range stays &plusmn;0.5 at every width and width controls granularity alone.</p>
 </section>
 
 <section>
 <h2><span class="n">8.</span> Transmission</h2>
-<p>The wire form stacks compression. RLE collapses uniform runs; deflate-raw<sup>[4]</sup>
+<p>The wire format stacks compression stages. RLE collapses uniform runs; deflate-raw<sup>[4]</sup>
 (available in browsers as <code>CompressionStream</code>) stacks on top. For
 URL transport the fragment carries the payload: <code>#s</code> for raw text,
 <code>#z</code> for base64url of deflate-raw. The fragment is never sent to the
-server, so a static host's URL-length ceiling does not apply. Deflate buys roughly
-seven-fold over raw percent-encoded emoji, because base64 is one ASCII character
-per six bits rather than twelve characters per 32-bit emoji. On a balanced encode
+server, so a static host's URL-length ceiling does not apply. Deflate yields roughly a
+seven-fold reduction over raw percent-encoded emoji, because base64 encodes six
+bits per ASCII character whereas percent-encoding uses twelve characters per
+32-bit emoji codepoint. On a balanced encode
 (876 glyphs) the raw percent-encoded form is about 9,000 URL characters; the
 compressed fragment is about 1,300.</p>
 </section>
@@ -413,7 +417,7 @@ foundation models in the browser. CLIP<sup>[9]</sup> ranks the palette's keyword
 labels against the whole image; OWL-ViT<sup>[7]</sup> localizes the top labels as
 bounding boxes. Boxes are computed on the 256&times;256 source canvas directly, so
 they land in raster space with no aspect transform.</p>
-<p>The pipeline is an opt-in checkbox (it downloads hundreds of megabytes of
+<p>The pipeline is optional (enabled via a checkbox); when enabled, it downloads hundreds of megabytes of
 model weights from a model registry). Detections become candidate base-layer
 sprites: each glyph with a translate (box center), a scale (box coverage), and a
 rotation. Selection runs in four stages: a confidence floor (<span class="math">thr = 0.05</span>),
@@ -456,7 +460,7 @@ scores the actual garment or footwear over absent ones.</p>
 
 <section>
 <h2><span class="n">10.</span> Evaluation</h2>
-<p>We measure on a six-image corpus spanning natural photos, line art, and a
+<p>We evaluate on a six-image corpus spanning natural photos, line art, and a
 depth map. The corpus is small by design: the encoder is deterministic, so the
 aim is to characterize behavior across content types (smooth, textured, line
 art) rather than to estimate a population mean, which would call for a
@@ -489,12 +493,12 @@ bytes, a content-adaptive default for the encoder's byte budget.</p>
 
 <figure>
 <svg viewBox="0 0 560 340" preserveAspectRatio="xMidYMid meet" role="img" aria-label="rate-distortion curves" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="11"><line x1="52" y1="296.0" x2="546" y2="296.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="299.5" text-anchor="end">0</text><line x1="52" y1="226.0" x2="546" y2="226.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="229.5" text-anchor="end">5</text><line x1="52" y1="156.0" x2="546" y2="156.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="159.5" text-anchor="end">10</text><line x1="52" y1="86.0" x2="546" y2="86.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="89.5" text-anchor="end">15</text><line x1="52" y1="16.0" x2="546" y2="16.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="19.5" text-anchor="end">20</text><line x1="52.0" y1="296" x2="52.0" y2="300" stroke="#555"/><text x="52.0" y="312" text-anchor="middle">0</text><line x1="175.5" y1="296" x2="175.5" y2="300" stroke="#555"/><text x="175.5" y="312" text-anchor="middle">500</text><line x1="299.0" y1="296" x2="299.0" y2="300" stroke="#555"/><text x="299.0" y="312" text-anchor="middle">1000</text><line x1="422.5" y1="296" x2="422.5" y2="300" stroke="#555"/><text x="422.5" y="312" text-anchor="middle">1500</text><line x1="546.0" y1="296" x2="546.0" y2="300" stroke="#555"/><text x="546.0" y="312" text-anchor="middle">2000</text><line x1="52" y1="16" x2="52" y2="296" stroke="#444" stroke-width="1"/><line x1="52" y1="296" x2="546" y2="296" stroke="#444" stroke-width="1"/><text x="299" y="334" text-anchor="middle">deflated bytes (lower rate →)</text><text x="14" y="156" text-anchor="middle" transform="rotate(-90 14 156)">mean ΔE00 (lower is better)</text><polyline points="88.1,231.2 107.3,242.1 124.4,249.7 148.1,256.9 173.8,260.3 196.7,261.6 212.1,263.0 258.0,265.5 373.8,269.0 491.7,271.2" fill="none" stroke="#000000" stroke-width="1.6" stroke-linejoin="round"/><circle cx="88.1" cy="231.2" r="2.6" fill="#000000"/><circle cx="107.3" cy="242.1" r="2.6" fill="#000000"/><circle cx="124.4" cy="249.7" r="2.6" fill="#000000"/><circle cx="148.1" cy="256.9" r="2.6" fill="#000000"/><circle cx="173.8" cy="260.3" r="2.6" fill="#000000"/><circle cx="196.7" cy="261.6" r="2.6" fill="#000000"/><circle cx="212.1" cy="263.0" r="2.6" fill="#000000"/><circle cx="258.0" cy="265.5" r="2.6" fill="#000000"/><circle cx="373.8" cy="269.0" r="2.6" fill="#000000"/><circle cx="491.7" cy="271.2" r="2.6" fill="#000000"/><circle cx="173.8" cy="260.3" r="4.6" fill="none" stroke="#000000" stroke-width="1.8"/><polyline points="94.0,38.3 109.1,52.4 131.3,73.4 145.4,82.5 160.2,89.4 195.0,103.6 236.0,113.9 274.5,119.6 291.6,121.8 356.3,129.8 453.1,137.9" fill="none" stroke="#0072B2" stroke-width="1.6" stroke-linejoin="round"/><circle cx="94.0" cy="38.3" r="2.6" fill="#0072B2"/><circle cx="109.1" cy="52.4" r="2.6" fill="#0072B2"/><circle cx="131.3" cy="73.4" r="2.6" fill="#0072B2"/><circle cx="145.4" cy="82.5" r="2.6" fill="#0072B2"/><circle cx="160.2" cy="89.4" r="2.6" fill="#0072B2"/><circle cx="195.0" cy="103.6" r="2.6" fill="#0072B2"/><circle cx="236.0" cy="113.9" r="2.6" fill="#0072B2"/><circle cx="274.5" cy="119.6" r="2.6" fill="#0072B2"/><circle cx="291.6" cy="121.8" r="2.6" fill="#0072B2"/><circle cx="356.3" cy="129.8" r="2.6" fill="#0072B2"/><circle cx="453.1" cy="137.9" r="2.6" fill="#0072B2"/><circle cx="195.0" cy="103.6" r="4.6" fill="none" stroke="#0072B2" stroke-width="1.8"/><polyline points="86.8,82.9 110.8,96.5 120.7,100.4 144.1,111.1 155.5,113.4 180.7,122.8 219.0,127.7 254.8,131.2 254.8,131.2 370.1,140.3 453.9,144.9" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-linejoin="round"/><circle cx="86.8" cy="82.9" r="2.6" fill="#E69F00"/><circle cx="110.8" cy="96.5" r="2.6" fill="#E69F00"/><circle cx="120.7" cy="100.4" r="2.6" fill="#E69F00"/><circle cx="144.1" cy="111.1" r="2.6" fill="#E69F00"/><circle cx="155.5" cy="113.4" r="2.6" fill="#E69F00"/><circle cx="180.7" cy="122.8" r="2.6" fill="#E69F00"/><circle cx="219.0" cy="127.7" r="2.6" fill="#E69F00"/><circle cx="254.8" cy="131.2" r="2.6" fill="#E69F00"/><circle cx="254.8" cy="131.2" r="2.6" fill="#E69F00"/><circle cx="370.1" cy="140.3" r="2.6" fill="#E69F00"/><circle cx="453.9" cy="144.9" r="2.6" fill="#E69F00"/><circle cx="180.7" cy="122.8" r="4.6" fill="none" stroke="#E69F00" stroke-width="1.8"/><polyline points="88.1,78.6 114.2,103.6 136.0,123.8 147.1,125.6 166.4,131.5 195.3,138.8 238.2,147.7 269.4,151.8 284.4,153.1 359.8,160.3 495.1,167.2" fill="none" stroke="#009E73" stroke-width="1.6" stroke-linejoin="round"/><circle cx="88.1" cy="78.6" r="2.6" fill="#009E73"/><circle cx="114.2" cy="103.6" r="2.6" fill="#009E73"/><circle cx="136.0" cy="123.8" r="2.6" fill="#009E73"/><circle cx="147.1" cy="125.6" r="2.6" fill="#009E73"/><circle cx="166.4" cy="131.5" r="2.6" fill="#009E73"/><circle cx="195.3" cy="138.8" r="2.6" fill="#009E73"/><circle cx="238.2" cy="147.7" r="2.6" fill="#009E73"/><circle cx="269.4" cy="151.8" r="2.6" fill="#009E73"/><circle cx="284.4" cy="153.1" r="2.6" fill="#009E73"/><circle cx="359.8" cy="160.3" r="2.6" fill="#009E73"/><circle cx="495.1" cy="167.2" r="2.6" fill="#009E73"/><circle cx="195.3" cy="138.8" r="4.6" fill="none" stroke="#009E73" stroke-width="1.8"/><line x1="503" y1="26" x2="519" y2="26" stroke="#009E73" stroke-width="1.6"/><circle cx="511" cy="26" r="2.6" fill="#009E73"/><text x="523" y="29.5">depth</text><line x1="509.2" y1="41" x2="525.2" y2="41" stroke="#E69F00" stroke-width="1.6"/><circle cx="517.2" cy="41" r="2.6" fill="#E69F00"/><text x="529.2" y="44.5">city</text><line x1="496.8" y1="56" x2="512.8" y2="56" stroke="#0072B2" stroke-width="1.6"/><circle cx="504.8" cy="56" r="2.6" fill="#0072B2"/><text x="516.8" y="59.5">parrot</text><line x1="503" y1="71" x2="519" y2="71" stroke="#000000" stroke-width="1.6"/><circle cx="511" cy="71" r="2.6" fill="#000000"/><text x="523" y="74.5">earth</text></svg>
-<figcaption class="cap"><b>Figure 3.</b> Rate-distortion curves: mean ΔE00 versus deflated byte budget, BFOS color-only encoding (α=0.7, no seed, no semantic layer). Every curve descends monotonically with rate. The open ring on each curve marks its knee — the maximum-deviation-from-chord point in normalized space<sup>[16]</sup> — i.e. the point of diminishing returns and a content-adaptive recommended budget (≈490–580 deflated bytes here). Earthrise is easy (ΔE00 ≈ 2–5); the detailed photos flatten toward ΔE00 9–13 once the palette gap (Figure 5) binds, not the rate.</figcaption>
+<figcaption class="cap"><b>Figure 3.</b> Rate-distortion curves: mean ΔE00 versus deflated byte budget, BFOS color-only encoding (α=0.7, no seed, no semantic layer). Lower ΔE00 is better. Every curve descends monotonically with rate. The open ring on each curve marks its knee — the maximum-deviation-from-chord point in normalized space<sup>[16]</sup> — i.e. the point of diminishing returns and a content-adaptive recommended budget (≈490–580 deflated bytes here). Earthrise is easy (ΔE00 ≈ 2–5); the detailed photos flatten toward ΔE00 9–13 once the palette gap (Figure 5) binds, not the rate.</figcaption>
 </figure>
 
 <div class="viewer-fig">
 <imgoji-viewer alpha="1">⬛💻⬛2-💻-!⬛-|⬛2!-|🎥-|⬛2📁🌪⬛!⬛|🍚🍽-|📞-|🎤💻⬛|🚔⬛-!⬛|💻2⬛!⬛|💻-📁📏🎛🕸⚪2🕸2⚪🍚🕸2📩💻🌪📁⬛!⬛2|🐄⬛|🚔⬛!⬛3|🍽-🌐2⚫🚿-⬛!-2⬛2|📁🐄⬛!⬛|💻2⬛!⬛|💻2-!⬛|💻-!📁🕸📁🕸2⚪🕸2📁2🕸4|🗜🐋⚪!🕸3⚪2🕸4|🐋🕸!🕸3🐋🧾|-🕸!🕸|-🐄🕸!⚪🕸2📁🕸4|🐋💻2🕸!🕸|💻⬛!⚪📁🍚🕸🧾🕸📁3|📁⬛|-💻⬜|🛴⬜|⚫🏙|-🐄⬜!⬜|💻⬛!⬜|🎵⚪!🌐👕🧊🌨🌐2|💨⚫🐬⬛!⬛🏙|🏙⬛!⬛|🗝⬛|🗜-|🎹💻🕸!🧾💻|💻⚪!⚪-⬛⚪2-⬛🍽2⬛2|🍽👓⬛!⬛|-💻⬛!⬛💻|💻🕸!🕸📁🐋🕸📁3🎼2📁2|🎵-2!-|💻2⚪!-💻|⬛⚪!⚪🕸2📁🧾-⬛🧾🍽⬛2🍽|👓⬛!⬛|💻2!🎼2🗜🎚-2🎓🍽⬛💻⬛🌨-⬜🥿🌐⬛📘⬛3💻⬜2💻2⚪⬜-⬛⬜🎹🍽⬛⬜🌊👕⚪🎦⚪👖2⬛2🥏2⚫🌑👕⚪🏍🏴2⬛🌊⬛🔍⬛🌊⬛🍽🎹🧾2🗝⬛🧾🍽⬛2-💻🎵🎹⚪2💻2⬜2💻⬛🧾⬜⬛2⚪🍽⬛2-💻📞💻⬜⚪💻⬛⚪2⬛2⬜⚪⬛2🍚🌩-2🌊🛴🎹💻⬜2🎵⬛⬜🍽</imgoji-viewer>
-<p class="cap"><b>Figure 4.</b> An imgoji encode, rendered live from its string
+<p class="cap"><b>Figure 4.</b> An imgoji encode, rendered live from its emoji string
 (442 chars · 1.2 KB raw · 486 B deflated · mean ΔE00 2.2). The leading glyph is the
 background anchor; what follows is a breadth-first quadtree walk, each cell's glyph
 blended over its parent's accumulated render. Cutting the stream at any point yields a
@@ -508,38 +512,38 @@ valid coarser frame (the prefix property).</p>
 Euclidean) distance with OKLab<sup>[8]</sup> on the theory that its perceptual
 uniformity would help. The original A/B judged both matchers with &Delta;E00
 (CIEDE2000), which is itself CIELAB-derived. That judge shares CIELAB's
-coordinate transform with the CIE76 matcher, so a CIELAB matcher is structurally
-favored and the test could not tell perceptual accuracy from home-field
-advantage. We re-ran it with a four-family ensemble judge: &Delta;E00
-(CIELAB-derived), OKLab-Euclidean (the OKLab matcher's own target),
+coordinate transform with the CIE76 matcher. A CIELAB matcher is therefore
+structurally favored, and the test could not distinguish perceptual accuracy
+from home-field advantage. We re-ran the experiment with a four-family ensemble judge: &Delta;E00
+(CIELAB-derived), OKLab-Euclidean (the OKLab matcher's target),
 Jzazbz-Euclidean<sup>[14]</sup> (PQ/LMS), and CAM16-UCS-Euclidean<sup>[15]</sup> (a color
 appearance model). Each matcher encodes at matched deflated-byte budgets, so the
-only variable is the matcher's color space. The result, over three images at two
-budgets: CIE76 wins &Delta;E00, Jzazbz, and CAM16-UCS on all six runs; OKLab wins
-OKLab-Euclidean on five. OKLab winning its own metric is trivial (it optimizes
-it), as is CIE76 winning &Delta;E00. The decisive evidence is the two judges
-neither matcher optimizes: Jzazbz and CAM16-UCS both rank the CIE76 matcher
+only variable is the matcher color space. The results, over three images at two
+budgets: CIE76 wins on &Delta;E00, Jzazbz, and CAM16-UCS in all six runs; OKLab
+wins on OKLab-Euclidean in five of six. OKLab winning its own metric is trivial (it optimizes
+it), as is CIE76 winning &Delta;E00. The decisive evidence comes from the two judges
+that neither matcher optimizes: Jzazbz and CAM16-UCS both rank the CIE76 matcher
 ahead. So the original finding was not a CIELAB-judge artifact; independent
 perceptual spaces also prefer CIE76, and OKLab's uniformity does not yield better
 reconstructions in the large-difference emoji regime. We retained CIE76.
 Caveat: all four spaces share the XYZ/LMS linear front end, so a residual
 family-agreement effect cannot be excluded without a judge outside that family or
-a human study; the Jzazbz margins are small. The matcher metric is also
+a human study; the Jzazbz margins are small. The choice of matcher metric is also
 second-order to the palette gap below.</p>
-<p><b>Perceptual pruning.</b> Growing the tree with &Delta;E00 distortion so
-BFOS allocated tokens to minimize perceptual error was marginally better only at
-the extreme low-token end (minus 0.1 to 0.4 &Delta;E00) and clearly worse
+<p><b>Perceptual pruning.</b> Growing the quadtree with &Delta;E00 distortion, so
+that BFOS allocated tokens to minimize perceptual error, was marginally better
+only at the extreme low-token end (by 0.1 to 0.4 &Delta;E00). It was clearly worse
 everywhere else, with a plateauing curve. The error is palette-limited, not
 allocation-limited: spending tokens on high-error regions cannot help when no
 glyph matches them.</p>
-<p><b>The palette gap.</b> Diagnosing where quality is lost, we bucketed per-pixel
+<p><b>The palette gap.</b> To diagnose where quality is lost, we bucketed per-pixel
 &Delta;E00 by the original pixel's chroma, hue, and lightness. Error concentrates
 in mid-chroma cool hues (green, cyan, blue, purple): the palette carries 4 to 19
 glyphs in those hues against 159 warm-hue glyphs (red, orange, yellow). Warm
 mid-chroma (skin, wood, food) is well covered. No rebalancing of a palette under
 512 glyphs shifts coverage into the gap, because the glyphs to put there do not
 exist in the emoji corpus. The gap is inherent, not a tuning failure. Expanding to
-the full undeduplicated 1,076-glyph palette yields about 4 to 5% &Delta;E00
+the full undeduplicated 1,076-codepoint palette yields about 4 to 5% &Delta;E00
 improvement at 1.7&times; encode time, confirming the ceiling.</p>
 <figure>
 <svg viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="palette hue coverage" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="11"><line x1="52" y1="260.0" x2="546" y2="260.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="263.5" text-anchor="end">0</text><line x1="52" y1="199.0" x2="546" y2="199.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="202.5" text-anchor="end">50</text><line x1="52" y1="138.0" x2="546" y2="138.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="141.5" text-anchor="end">100</text><line x1="52" y1="77.0" x2="546" y2="77.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="80.5" text-anchor="end">150</text><line x1="52" y1="16.0" x2="546" y2="16.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="19.5" text-anchor="end">200</text><line x1="52" y1="16" x2="52" y2="260" stroke="#444"/><line x1="52" y1="260" x2="546" y2="260" stroke="#444"/><rect x="62.4" y="221.0" width="34.0" height="39.0" fill="#D55E00" fill-opacity="0.85"/><text x="79.4" y="217.0" text-anchor="middle" font-size="10">32</text><text x="79.4" y="275" text-anchor="middle">R</text><rect x="117.3" y="124.6" width="34.0" height="135.4" fill="#E69F00" fill-opacity="0.85"/><text x="134.3" y="120.6" text-anchor="middle" font-size="10">111</text><text x="134.3" y="275" text-anchor="middle">O</text><rect x="172.2" y="58.7" width="34.0" height="201.3" fill="#E69F00" fill-opacity="0.85"/><text x="189.2" y="54.7" text-anchor="middle" font-size="10">165</text><text x="189.2" y="275" text-anchor="middle">Y</text><rect x="227.1" y="206.3" width="34.0" height="53.7" fill="#009E73" fill-opacity="0.85"/><text x="244.1" y="202.3" text-anchor="middle" font-size="10">44</text><text x="244.1" y="275" text-anchor="middle">G</text><rect x="282.0" y="251.5" width="34.0" height="8.5" fill="#0072B2" fill-opacity="0.85"/><text x="299.0" y="247.5" text-anchor="middle" font-size="10">7</text><text x="299.0" y="275" text-anchor="middle">C</text><rect x="336.9" y="228.3" width="34.0" height="31.7" fill="#0072B2" fill-opacity="0.85"/><text x="353.9" y="224.3" text-anchor="middle" font-size="10">26</text><text x="353.9" y="275" text-anchor="middle">B</text><rect x="391.8" y="207.5" width="34.0" height="52.5" fill="#CC79A7" fill-opacity="0.85"/><text x="408.8" y="203.5" text-anchor="middle" font-size="10">43</text><text x="408.8" y="275" text-anchor="middle">P</text><rect x="446.7" y="235.6" width="34.0" height="24.4" fill="#CC79A7" fill-opacity="0.85"/><text x="463.7" y="231.6" text-anchor="middle" font-size="10">20</text><text x="463.7" y="275" text-anchor="middle">M</text><rect x="501.5" y="191.7" width="34.0" height="68.3" fill="#999" fill-opacity="0.7"/><text x="518.6" y="187.7" text-anchor="middle" font-size="10">56</text><text x="518.6" y="275" text-anchor="middle">neutral</text><text x="14" y="138" text-anchor="middle" transform="rotate(-90 14 138)">palette glyphs (deduped)</text></svg>
@@ -570,11 +574,11 @@ glyph art that renders from the viewer's own font.</p>
 
 <section>
 <h2><span class="n">13.</span> Conclusion</h2>
-<p>An image can be a string of emoji. We gave a convergent blend model that makes
-the string's reconstruction improve with length, a breadth-first traversal that
-makes every prefix valid, cost-complexity pruning that picks where to subdivide
-optimally, and a semantic layer that places object-correct glyphs validated by
-measured error. The codec is bounded by its palette, and we reported where and why
+<p>An image can be a string of emoji. We introduced a convergent blend model that makes
+the string's reconstruction improve with length, and a breadth-first traversal
+that makes every prefix a valid image. We applied cost-complexity pruning to
+pick subdivision points optimally, and added a semantic layer that places
+object-correct glyphs, validated by measured error. The codec is bounded by its palette, and we reported where and why
 it cannot be improved by metric choice alone. The artifact is text: short,
 transmissible, and rendered from a glyph set the viewer already has.</p>
 </section>
@@ -589,15 +593,15 @@ transmissible, and rendered from a glyph set the viewer already has.</p>
 <li>Breiman, L., Friedman, J. H., Olshen, R. A., and Stone, C. J. (1984). <i>Classification and Regression Trees.</i> Wadsworth, Belmont, CA.</li>
 <li>Davis, M. and Edberg, P. (2023). <i>Unicode Emoji, Version 15.1.</i> Unicode Technical Standard #51, Unicode Consortium.</li>
 <li>Deutsch, P. (1996). <i>DEFLATE Compressed Data Format Specification version 1.3.</i> RFC 1951, IETF.</li>
-<li>Eisner, M., Rocktaeschel, T., Augenstein, I., Bosnjak, M., and Riedel, S. (2016). <i>emoji2vec: Learning Emoji Representations from their Description.</i> In Proc.\ WSDM Emoji Workshop.</li>
-<li>Shapiro, J. M. (1993). <i>Embedded image coding using zerotrees of wavelet coefficients.</i> IEEE Trans.\ Signal Processing, 41(12):3445-3462.</li>
-<li>Minderer, M., Gritsenko, A., Houlsby, N. et al. (2022). <i>Simple Open-Vocabulary Object Detection with Vision Transformers.</i> In Proc.\ ECCV.</li>
+<li>Eisner, M., Rocktaeschel, T., Augenstein, I., Bosnjak, M., and Riedel, S. (2016). <i>emoji2vec: Learning Emoji Representations from their Description.</i> In Proc. WSDM Emoji Workshop.</li>
+<li>Shapiro, J. M. (1993). <i>Embedded image coding using zerotrees of wavelet coefficients.</i> IEEE Trans. Signal Processing, 41(12):3445-3462.</li>
+<li>Minderer, M., Gritsenko, A., Houlsby, N. et al. (2022). <i>Simple Open-Vocabulary Object Detection with Vision Transformers.</i> In Proc. ECCV.</li>
 <li>Ottosson, B. (2020). <i>A perceptual color space for image processing &mdash; OKLab.</i> Technical note.</li>
-<li>Radford, A., Kim, J. W., Hallacy, C. et al. (2021). <i>Learning Transferable Visual Models From Natural Language Supervision.</i> In Proc.\ ICML.</li>
-<li>Said, A. and Pearlman, W. A. (1996). <i>A New, Fast, and Efficient Image Codec Based on Set Partitioning in Hierarchical Trees.</i> IEEE Trans.\ Circuits Syst.\ Video Technol., 6(3):243-250.</li>
+<li>Radford, A., Kim, J. W., Hallacy, C. et al. (2021). <i>Learning Transferable Visual Models From Natural Language Supervision.</i> In Proc. ICML.</li>
+<li>Said, A. and Pearlman, W. A. (1996). <i>A New, Fast, and Efficient Image Codec Based on Set Partitioning in Hierarchical Trees.</i> IEEE Trans. Circuits Syst. Video Technol., 6(3):243-250.</li>
 <li>Sharma, G., Wu, W., and Dalal, E. N. (2005). <i>The CIEDE2000 Color-Difference Formula: Implementation Notes, Supplementary Test Data, and Mathematical Observations.</i> Color Research &amp; Application, 30(1):21-30.</li>
 <li>Sullivan, G. J. and Wiegand, T. (1998). <i>Rate-distortion optimization for video compression.</i> IEEE Signal Processing Magazine, 15(6):74-90.</li>
-<li>Wallace, G. K. (1991). <i>The JPEG Still Picture Compression Standard.</i> Commun.\ ACM, 34(4):30-44.</li>
+<li>Wallace, G. K. (1991). <i>The JPEG Still Picture Compression Standard.</i> Commun. ACM, 34(4):30-44.</li>
 <li>Safdar, M., Cui, G., Kim, Y. J., and Luo, M. R. (2017). <i>Perceptually uniform color space for image signals including high dynamic range and wide gamut.</i> Optics Express, 25(13):15131. (J<sub>z</sub>a<sub>z</sub>b<sub>z</sub>.)</li>
 <li>Li, C., Li, Z., Wang, Z., Xu, Y., Luo, M. R., Cui, G., Melgosa, M., Brill, M. H., and Pointer, M. (2017). <i>Comprehensive color solutions: CAM16, CAT16, and CAM16-UCS.</i> Color Research &amp; Application, 42(6):703-718.</li>
 <li>Satop&auml;&auml;, V., Albrecht, J., Irwin, D., and Raghavan, B. (2011). <i>Finding a &ldquo;Kneedle&rdquo; in a Haystack: Detecting Knee Points in System Behavior.</i> INRIA Research Report RR-7879.</li>
@@ -607,8 +611,8 @@ transmissible, and rendered from a glyph set the viewer already has.</p>
 <p class="papernote">
 imgoji is open source and runs entirely in the browser. The encoder, the renderer,
 and the &lt;imgoji-viewer&gt; custom element are importable ES modules with no
-build step. This document renders Figure 2 live from the codec; a print export
-bakes the pixels. Source, format specification, and the interactive tool are
+build step. This document renders Figure 2 live using the codec; a print export
+bakes the pixels into static images. Source, format specification, and the interactive tool are
 linked from the project page.
 </p>
 

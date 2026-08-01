@@ -314,3 +314,11 @@ imgoji-viewer.zoomable { cursor: zoom-in; }
 /* ---- share: viewer drag-drop highlight + action row wrap ---- */
 imgoji-viewer.drag { outline: 3px solid #1a3f8a; outline-offset: -3px; }
 .render-actions { flex-wrap: wrap; row-gap: 0.3rem; }
+
+/* ---- opt-in server share (short link / gallery) disclosure ---- */
+.server-share { margin-top: 0.5rem; font-size: 0.82rem; }
+.server-share > summary { cursor: pointer; color: var(--muted, #5a5a55); font-weight: 600; }
+.server-note { font-size: 0.78rem; color: #5a5a55; margin: 0.4rem 0; max-width: 44ch; }
+.server-share .chk { display: block; margin: 0.2rem 0; }
+.server-share .chk input { margin-right: 0.35rem; }
+.server-share .btn { margin-top: 0.4rem; }

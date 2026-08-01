@@ -119,7 +119,7 @@
     foundation models in the browser: CLIP for whole-image classification and
     OWL-ViT for object detection. Detected objects are pinned as base-layer
     sprites. A greedy &Delta;E00 filter retains a sprite only when it lowers
-    regional error. Each candidate is tested over all sixteen rotations. We
+    regional error. Each candidate is tested over sixteen rotations and sixteen hue rotations. We
     report rate-distortion results on a six-image corpus, characterize convergence
     behavior, and present negative findings. A re-test of the matcher metric under a
     four-family judge ensemble (&Delta;E00, OKLab, Jzazbz, CAM16-UCS) confirms
@@ -232,9 +232,9 @@ evaluator that the encoder cannot optimize directly.</p>
 </section>
 
 <section>
-<h2><span class="n">3.</span> The representation</h2>
+<h2><span class="n">3.</span> Representation</h2>
 
-<h3><span class="n">3.1</span> The model</h3>
+<h3><span class="n">3.1</span> Model</h3>
 <p>A scene is an ordered list of placed glyph <i>subjects</i>, rendered
 back-to-front. A subject is one or more grapheme clusters laid out as a text run.
 The canvas is the unit square; transforms are frame-relative, so a scene is
@@ -244,7 +244,7 @@ opacity, and an HSV hue rotation. Order is the only z-index; later subjects pain
 over earlier ones. A formal grammar appears in the project's format
 specification; we summarize the codec-specific serialization here.</p>
 
-<h3><span class="n">3.2</span> The quadtree and the blend</h3>
+<h3><span class="n">3.2</span> Quadtree and blending</h3>
 <p>The codec is the novel core. It approximates a raster image as a quadtree of
 blended glyphs. The first glyph approximates the whole image. The next four
 approximate the quadrants, the following sixteen each quadrant's sub-quadrants,
@@ -277,7 +277,7 @@ approximation improves at every depth from 1 onward. The depth-0 value
 slightly worse than a flat mean fill. This is a real cost of placing a glyph at
 the root that subsequent refinement must recover.</p>
 
-<p class="tblcap">Table 1: Earthrise reconstruction RMS vs. depth (no seed, &alpha;=0.7, RGB).</p>
+<p class="tblcap">Table 1: Earthrise reconstruction RMS vs. depth (no seed, &alpha;=0.7, RGB; lower is better).</p>
 <table class="results">
 <thead><tr><th class="lbl">depth</th><th>cells</th><th>RMS</th></tr></thead>
 <tbody>
@@ -319,7 +319,7 @@ render a fraction of the stream to show progressive build-up.</p>
 </section>
 
 <section>
-<h2><span class="n">5.</span> The glyph palette</h2>
+<h2><span class="n">5.</span> Glyph palette</h2>
 <p>The palette is generated from Unicode <code>emoji-data.txt</code> 15.1.0<sup>[3]</sup> across
 the classic pictograph ranges, with skin-tone modifiers and component codepoints
 excluded. It is pinned to 15.1.0 rather than the latest version so it excludes
@@ -376,7 +376,7 @@ RMS, a strict Pareto win on three of five images.</p>
 </section>
 
 <section>
-<h2><span class="n">7.</span> Grammar</h2>
+<h2><span class="n">7.</span> String grammar</h2>
 <p>The codec's native serialization is a position-implicit breadth-first string.
 One invariant carries the grammar: <i>lowercase ASCII letters are operators;
 uppercase hex digits are data.</i> A cell is either a list of positioned DSL
@@ -436,14 +436,18 @@ retained glyphs (water, leg, swimwear, person) lower &Delta;E00 in their regions
 the dropped glyphs (feet, beach-with-umbrella, swimmer) did not, because their
 pictographs do not match the local pixels.</p>
 
-<h3><span class="n">9.2</span> Rotation search</h3>
+<h3><span class="n">9.2</span> Rotation and hue search</h3>
 <p>Each surviving candidate is tested over all sixteen rotations of the DSL
 rotation op (<code>r0</code> through <code>rF</code>, 0&deg; to 337.5&deg; in
 22.5&deg; steps). The rotation minimizing &Delta;E00 in the footprint is kept.
 The snapshot region is padded by about a fifth of the cell side per edge to cover
 the rotated bounding extent, so a rotated glyph's stray corner pixels do not
 corrupt the next measurement. A rotation of zero is omitted from the output
-string, keeping it compact. On the beach image the retained sprites settled at
+string, keeping it compact. The same sweep is then applied to the hue op
+(<code>h0</code> through <code>hF</code>, the same 22.5&deg; steps), holding the chosen
+rotation; the hue that further lowers &Delta;E00 in the footprint is kept, and
+<code>h0</code> is omitted. Hue lets a glyph match colors away from its natural
+palette. On the beach image the retained sprites settled at
 157&deg;, 315&deg;, 292&deg;, and 0&deg; respectively; the error filter plus
 rotation search chose the orientation of each glyph against measured distortion,
 not against detection confidence alone.</p>
@@ -547,7 +551,7 @@ the full undeduplicated 1,076-codepoint palette yields about 4 to 5% &Delta;E00
 improvement at 1.7&times; encode time, confirming the ceiling.</p>
 <figure>
 <svg viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="palette hue coverage" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="11"><line x1="52" y1="260.0" x2="546" y2="260.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="263.5" text-anchor="end">0</text><line x1="52" y1="199.0" x2="546" y2="199.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="202.5" text-anchor="end">50</text><line x1="52" y1="138.0" x2="546" y2="138.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="141.5" text-anchor="end">100</text><line x1="52" y1="77.0" x2="546" y2="77.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="80.5" text-anchor="end">150</text><line x1="52" y1="16.0" x2="546" y2="16.0" stroke="#e2dfd5" stroke-width="1"/><text x="46" y="19.5" text-anchor="end">200</text><line x1="52" y1="16" x2="52" y2="260" stroke="#444"/><line x1="52" y1="260" x2="546" y2="260" stroke="#444"/><rect x="62.4" y="221.0" width="34.0" height="39.0" fill="#D55E00" fill-opacity="0.85"/><text x="79.4" y="217.0" text-anchor="middle" font-size="10">32</text><text x="79.4" y="275" text-anchor="middle">R</text><rect x="117.3" y="124.6" width="34.0" height="135.4" fill="#E69F00" fill-opacity="0.85"/><text x="134.3" y="120.6" text-anchor="middle" font-size="10">111</text><text x="134.3" y="275" text-anchor="middle">O</text><rect x="172.2" y="58.7" width="34.0" height="201.3" fill="#E69F00" fill-opacity="0.85"/><text x="189.2" y="54.7" text-anchor="middle" font-size="10">165</text><text x="189.2" y="275" text-anchor="middle">Y</text><rect x="227.1" y="206.3" width="34.0" height="53.7" fill="#009E73" fill-opacity="0.85"/><text x="244.1" y="202.3" text-anchor="middle" font-size="10">44</text><text x="244.1" y="275" text-anchor="middle">G</text><rect x="282.0" y="251.5" width="34.0" height="8.5" fill="#0072B2" fill-opacity="0.85"/><text x="299.0" y="247.5" text-anchor="middle" font-size="10">7</text><text x="299.0" y="275" text-anchor="middle">C</text><rect x="336.9" y="228.3" width="34.0" height="31.7" fill="#0072B2" fill-opacity="0.85"/><text x="353.9" y="224.3" text-anchor="middle" font-size="10">26</text><text x="353.9" y="275" text-anchor="middle">B</text><rect x="391.8" y="207.5" width="34.0" height="52.5" fill="#CC79A7" fill-opacity="0.85"/><text x="408.8" y="203.5" text-anchor="middle" font-size="10">43</text><text x="408.8" y="275" text-anchor="middle">P</text><rect x="446.7" y="235.6" width="34.0" height="24.4" fill="#CC79A7" fill-opacity="0.85"/><text x="463.7" y="231.6" text-anchor="middle" font-size="10">20</text><text x="463.7" y="275" text-anchor="middle">M</text><rect x="501.5" y="191.7" width="34.0" height="68.3" fill="#999" fill-opacity="0.7"/><text x="518.6" y="187.7" text-anchor="middle" font-size="10">56</text><text x="518.6" y="275" text-anchor="middle">neutral</text><text x="14" y="138" text-anchor="middle" transform="rotate(-90 14 138)">palette glyphs (deduped)</text></svg>
-<figcaption class="cap"><b>Figure 5.</b> Palette hue coverage: deduplicated glyph count per hue band (mean a*/b* of each glyph; near-neutral glyphs counted separately). Warm hues dominate — yellow 165, orange 111, red 32 — against a sparse cool region: cyan 7, blue 26, purple 43. Bars are colored by hue family to make the warm/cool asymmetry visible. No rebalancing of a sub-512 palette can fill the cool gap, because the muted cool pictographs do not exist in the emoji corpus.</figcaption>
+<figcaption class="cap"><b>Figure 5.</b> Palette hue coverage: deduplicated glyph count per hue band (mean a*/b* of each glyph; near-neutral glyphs counted separately). Higher bars indicate more glyphs in that hue band. Warm hues dominate — yellow 165, orange 111, red 32 — against a sparse cool region: cyan 7, blue 26, purple 43. Bars are colored by hue family to make the warm/cool asymmetry visible. No rebalancing of a sub-512 palette can fill the cool gap, because the muted cool pictographs do not exist in the emoji corpus.</figcaption>
 </figure>
 <p><b>System-font dependence.</b> A string encoded on one operating system decodes
 to different pixels on another (Apple, Google, Noto). This is the format's

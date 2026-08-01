@@ -262,11 +262,24 @@ export class Encoder {
         const err = this.meanDeltaE(rx, ry, rw, rh);
         if (err < bestErr) { bestErr = err; bestRot = rot; }
       }
-      if (bestErr < before) {
+      // Then sweep the 16 hue rotations (h0..hF, 22.5° steps), holding the best
+      // rotation; keep the hue if it lowers the footprint error further. h0 is the
+      // no-hue baseline (== bestErr), so the loop starts at 1.
+      const rotOp = bestRot ? 'r' + bestRot.toString(16).toUpperCase() : '';
+      let bestHue = 0, bestErrH = bestErr;
+      for (let hue = 1; hue < 16; hue++) {
         rctx.putImageData(snap, rx, ry);
-        const rTok = tok + (bestRot ? 'r' + bestRot.toString(16).toUpperCase() : '');
-        const dt = splitGraphemes(rTok); if (isDSLStart(dt, 0)) this.renderer.renderSprite(dt, 0, rctx, W);
-        kept.push(rTok);
+        const hTok = tok + rotOp + 'h' + hue.toString(16).toUpperCase();
+        const dt = splitGraphemes(hTok); if (isDSLStart(dt, 0)) this.renderer.renderSprite(dt, 0, rctx, W);
+        const err = this.meanDeltaE(rx, ry, rw, rh);
+        if (err < bestErrH) { bestErrH = err; bestHue = hue; }
+      }
+      if (bestErrH < before) {
+        rctx.putImageData(snap, rx, ry);
+        const hueOp = bestHue ? 'h' + bestHue.toString(16).toUpperCase() : '';
+        const kTok = tok + rotOp + hueOp;
+        const dt = splitGraphemes(kTok); if (isDSLStart(dt, 0)) this.renderer.renderSprite(dt, 0, rctx, W);
+        kept.push(kTok);
       } else rctx.putImageData(snap, rx, ry);
     }
     return kept;

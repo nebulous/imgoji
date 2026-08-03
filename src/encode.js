@@ -9,6 +9,7 @@
 import { splitGraphemes, rleExpand, rleCompress, isDSLStart, rgbToLab, rgbToOklab, dE00, encBytes, deflateRawBytes, LEAF_MARKER, SKIP_MARKER, LEAF_MODE_MARKER } from './util.js';
 import { GlyphCache, renderEmojiAt, TINT_ANCHORS, ANCHOR_EMOJI } from './glyph.js';
 import { Renderer } from './render.js';
+import EMOJI_LIST from '../assets/emoji-list.mjs';
 
 const WORK = 256;
 const TINT_STRENGTH = 0.5;
@@ -129,7 +130,7 @@ export class Encoder {
     this._ensureScratch();
     const C = this.compare;
     const DEDUP = this.dedup ?? (typeof window !== 'undefined' && window.IMGOJI_DEDUP) ?? 16;
-    const list = this.emojiList || (typeof window !== 'undefined' && window.IMGOJI_EMOJI) || [];
+    const list = this.emojiList || (typeof window !== 'undefined' && window.IMGOJI_EMOJI) || EMOJI_LIST;
     const { scale, font } = this.glyphs;
     const gctx = this._gctx;
     gctx.textAlign = 'center'; gctx.textBaseline = 'middle';

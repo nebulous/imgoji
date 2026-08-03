@@ -10,6 +10,14 @@ const listSrc = fs.readFileSync(path.join(root, 'assets/emoji-list.js'), 'utf8')
 const cps = listSrc.match(/=\[([^\]]+)\]/)[1].split(',').map((x) => Number(x.trim()));
 console.log('palette codepoints:', cps.length);
 
+// Keep the ESM mirror of emoji-list.js in sync (default export = codepoint array),
+// so npm/ESM consumers get the palette without the window-global classic script.
+fs.writeFileSync(path.join(root, 'assets/emoji-list.mjs'),
+  '// Auto-generated ESM mirror of assets/emoji-list.js (window.IMGOJI_EMOJI).
+' +
+  '// Default export is the codepoint array. Regenerate: node gen-emoji-names.mjs\n' +
+  'export default [' + cps.map((x) => '0x' + x.toString(16).toUpperCase()).join(',') + '];\n');
+
 const url = 'https://cdn.jsdelivr.net/gh/iamcal/emoji-data@master/emoji.json';
 const data = await fetch(url).then((r) => r.json());
 // Map the base codepoint (first segment of unified) -> short_name, preferring the

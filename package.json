@@ -3,19 +3,25 @@
   "version": "1.0.0",
   "description": "Render emoji strings as images: a drop-in, asset-free web component and matching encoder.",
   "type": "module",
+  "sideEffects": [
+    "./src/viewer.js"
+  ],
   "exports": {
     ".": "./src/index.js",
     "./render": "./src/render.js",
     "./viewer": "./src/viewer.js",
     "./glyph": "./src/glyph.js",
-    "./util": "./src/util.js"
+    "./util": "./src/util.js",
+    "./emoji-list": "./assets/emoji-list.mjs"
   },
   "main": "./src/index.js",
   "module": "./src/index.js",
   "browser": "./src/index.js",
   "files": [
     "src",
-    "assets",
+    "assets/emoji-list.js",
+    "assets/emoji-list.mjs",
+    "assets/emoji-keywords.js",
     "README.md",
     "FORMAT.md"
   ],
@@ -30,12 +36,18 @@
     "quadtree",
     "image-encoding"
   ],
-  "author": "",
+  "author": "John Lifsey",
   "license": "ISC",
-  "dependencies": {
-    "playwright": "^1.61.1"
+  "homepage": "https://nebulous.github.io/imgoji/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nebulous/imgoji.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nebulous/imgoji/issues"
   },
   "devDependencies": {
+    "playwright": "^1.61.1",
     "typedoc": "^0.28.20",
     "typescript": "^6.0.3"
   }

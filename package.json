@@ -20,7 +20,7 @@
     "FORMAT.md"
   ],
   "scripts": {
-    "test": "bun test/viewer.test.mjs && bun test/encode.test.mjs && bun test/docs.test.mjs",
+    "test": "bun test/viewer.test.mjs && bun test/encode.test.mjs && bun test/docs.test.mjs && bun test/gallery.test.mjs",
     "docs:api": "typedoc"
   },
   "keywords": [

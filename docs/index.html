@@ -53,6 +53,7 @@
     <button type="button" role="tab" aria-selected="true" data-tab="view" class="active">view</button>
     <button type="button" role="tab" aria-selected="false" data-tab="encode">encode</button>
     <button type="button" role="tab" aria-selected="false" data-tab="grid">grid</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="gallery">gallery</button>
   </nav>
 
   <!-- shared image picker, shown on the quad + grid tabs -->
@@ -137,15 +138,12 @@
         </button>
       </div>
     </div>
-    <code class="api">&lt;imgoji-viewer&gt;  ·  Renderer.decode(str, ctx)</code>
   </section>
 
   <!-- ====================== QUAD ====================== -->
   <section id="encode-panel" class="panel" role="tabpanel" hidden>
     <header class="sec-head">
-      <p class="lab">// encode</p>
       <h2>Encode the image as a blended quadtree string.</h2>
-      <code class="api">new Encoder().encode(image, { depth, byteTarget, seed })</code>
     </header>
 
     <div class="encode-fields">
@@ -216,9 +214,7 @@
   <!-- ====================== GRID ====================== -->
   <section id="grid-panel" class="panel" role="tabpanel" hidden>
     <header class="sec-head">
-      <p class="lab">// grid</p>
       <h2>Flatten the image into a grid of emoji — color, plus semantic picks where objects are detected.</h2>
-      <code class="api">encoder.rasterize(image, { cols, rows, boost, lambda })</code>
     </header>
 
     <div class="encode-fields">
@@ -274,11 +270,21 @@
       </div>
     </div>
   </section>
-</main>
 
-<footer class="site-footer">
-  <p class="footer-links"><a href="paper.html">paper</a> · <a href="https://github.com/nebulous/imgoji">github</a></p>
-</footer>
+  <!-- ====================== GALLERY ====================== -->
+  <section id="gallery-panel" class="panel" role="tabpanel" hidden>
+    <header class="sec-head">
+      <h2>Public renders shared to imgoji. Click one to open it in the view tab.</h2>
+    </header>
+    <div class="encode-actions">
+      <button type="button" class="btn ghost sm" id="galleryRefresh">Refresh</button>
+      <span class="status" id="galleryStatus" role="status" aria-live="polite"></span>
+    </div>
+    <div class="full-bleed">
+      <div id="galleryGrid" class="gallery-grid" aria-busy="false"></div>
+    </div>
+  </section>
+</main>
 
 <!-- Emoji codepoint list + per-emoji keywords (classic scripts run first). -->
 <script src="../assets/emoji-list.js"></script>

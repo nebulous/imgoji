@@ -173,10 +173,12 @@ function switchTab(name) {
     b.classList.toggle('active', on);
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   }
-  $('picker').hidden = (name === 'view');
+  $('picker').hidden = (name !== 'encode' && name !== 'grid');
   $('view-panel').hidden = (name !== 'view');
   $('encode-panel').hidden = (name !== 'encode');
   $('grid-panel').hidden = (name !== 'grid');
+  $('gallery-panel').hidden = (name !== 'gallery');
+  if (name === 'gallery') loadGallery();
 }
 
 // ---- shared picker (encode + grid) --------------------------------------
@@ -541,23 +543,114 @@ async function openImgFile(file) {
   setRender(str);
   $('renderStatus').textContent = `opened ${file.name}`;
 }
-// Decode a shared render from the URL fragment (#z deflated, #s raw; optional &a=alpha).
+// Decode an imgoji share link (full URL or bare fragment) into { str, alpha? }, or null.
+// Shared by loadFromFragment (the view tab) and the public gallery tiles.
+async function decodeShare(ref) {
+  let hash = '';
+  try { hash = new URL(ref, location.href).hash || ''; }
+  catch { hash = String(ref).startsWith('#') ? String(ref) : ''; }
+  if (!hash || hash.length < 2) return null;
+  const p = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+  const out = {};
+  if (p.has('a')) { const a = parseFloat(p.get('a')); if (!isNaN(a)) out.alpha = a; }
+  try {
+    if (p.has('z')) out.str = new TextDecoder().decode(await inflateRaw(b64urlDecode(p.get('z'))));
+    else if (p.has('s')) out.str = decodeURIComponent(p.get('s'));
+  } catch { return null; }
+  return out.str ? out : null;
+}
+
+// Receive a shared render from the URL fragment (#z deflated, #s raw; optional &a=alpha).
 async function loadFromFragment() {
   await fontsReady;
-  const raw = location.hash;
-  if (!raw || raw.length < 3) return;
-  const p = new URLSearchParams(raw.startsWith('#') ? raw.slice(1) : raw);
-  let str = null, alpha, hadShare = false;
-  if (p.has('a')) { const a = parseFloat(p.get('a')); if (!isNaN(a)) alpha = a; }
-  try {
-    if (p.has('z')) { hadShare = true; str = new TextDecoder().decode(await inflateRaw(b64urlDecode(p.get('z')))); }
-    else if (p.has('s')) { hadShare = true; str = decodeURIComponent(p.get('s')); }
-  } catch (e) { str = null; }
-  if (!str) { if (hadShare) { setRender($('renderInput').value || ''); $('renderStatus').textContent = "couldn't load that link"; } return; }
-  if (Number.isFinite(alpha)) $('viewer').setAttribute('alpha', String(alpha));
-  $('renderInput').value = str;
+  if (!location.hash || location.hash.length < 3) return;
+  const dec = await decodeShare(location.hash);
+  if (!dec) {
+    if (/[#&?](z|s)=/.test(location.hash)) { setRender($('renderInput').value || ''); $('renderStatus').textContent = "couldn't load that link"; }
+    return;
+  }
+  if (dec.alpha != null) $('viewer').setAttribute('alpha', String(dec.alpha));
+  $('renderInput').value = dec.str;
   switchTab('view');
-  setRender(str);
+  setRender(dec.str);
+}
+
+// ---- public gallery (gallery tab) ----------------------------------------
+// Loads submissions captured by the shortener (key prefix "g:") via GET /g and
+// decodes each share URL into its own <imgoji-viewer> tile. Clicking a tile loads
+// the render into the view tab. Empty/error states invite the next action.
+let galleryLoaded = false;
+function relTime(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 45) return 'just now';
+  if (s < 3600) return Math.round(s / 60) + 'm ago';
+  if (s < 86400) return Math.round(s / 3600) + 'h ago';
+  if (s < 604800) return Math.round(s / 86400) + 'd ago';
+  return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+const galleryMsg = (text, inner = '') => `<div class="gallery-msg"><p>${text}</p>${inner}</div>`;
+async function loadGallery(force) {
+  if (!force && galleryLoaded) return;
+  const grid = $('galleryGrid'), status = $('galleryStatus');
+  if (!SHORTENER) { grid.innerHTML = galleryMsg('The gallery is not configured on this build.'); return; }
+  status.textContent = 'loading…';
+  grid.setAttribute('aria-busy', 'true');
+  grid.innerHTML = Array.from({ length: 8 }, () => '<span class="gtile-skel"></span>').join('');
+  try {
+    const r = await fetch(SHORTENER + '/g', { headers: { accept: 'application/json' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const items = await r.json();
+    grid.innerHTML = '';
+    if (!Array.isArray(items) || !items.length) {
+      galleryLoaded = true;
+      status.textContent = '';
+      grid.innerHTML = galleryMsg('No public renders yet.', '<button type="button" class="btn ghost sm" id="galleryEmptyGo">Share one from the view tab →</button>');
+      $('galleryEmptyGo').addEventListener('click', () => switchTab('view'));
+      return;
+    }
+    status.textContent = items.length + (items.length === 1 ? ' render' : ' renders');
+    await fontsReady;
+    let shown = 0;
+    for (const it of items) {
+      const dec = await decodeShare(it.url);
+      if (!dec || !dec.str) continue;
+      appendGalleryTile(dec.str, dec.alpha, it);
+      shown++;
+      await new Promise((r) => requestAnimationFrame(r));   // yield between decodes so the grid fills smoothly
+    }
+    galleryLoaded = true;
+    if (!shown) grid.innerHTML = galleryMsg('No renders here could be decoded.');
+  } catch (e) {
+    status.textContent = '';
+    grid.innerHTML = galleryMsg('Couldn\'t load the gallery.', '<button type="button" class="btn ghost sm" id="galleryRetry">Try again</button>');
+    $('galleryRetry').addEventListener('click', () => loadGallery(true));
+  } finally {
+    grid.setAttribute('aria-busy', 'false');
+  }
+}
+function appendGalleryTile(str, alpha, item) {
+  const grid = $('galleryGrid');
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'gtile';
+  btn.title = 'Open this render in the view tab';
+  const frame = document.createElement('span');
+  frame.className = 'gtile-frame viewport';
+  const v = document.createElement('imgoji-viewer');
+  if (alpha != null) v.setAttribute('alpha', String(alpha));
+  frame.appendChild(v);
+  const meta = document.createElement('span');
+  meta.className = 'gtile-meta';
+  meta.textContent = item && item.t ? relTime(item.t) : '';
+  btn.append(frame, meta);
+  btn.addEventListener('click', () => {
+    if (alpha != null) $('viewer').setAttribute('alpha', String(alpha));
+    $('renderInput').value = str;
+    switchTab('view');
+    setRender(str);
+  });
+  grid.append(btn);
+  v.value = str;   // connected now; one decode
 }
 
 function init() {
@@ -617,6 +710,9 @@ function init() {
   });
   loadFromFragment();   // receive a shared render from the URL fragment on load
   window.addEventListener('hashchange', loadFromFragment);
+
+  // gallery tab: manual refresh pulls new submissions
+  $('galleryRefresh').addEventListener('click', () => loadGallery(true));
 
   // detail slider label
   const detail = $('detail'), detailVal = $('detailVal');

@@ -84,9 +84,7 @@ main { padding-bottom: 24px; }
 .panel { padding-top: 20px; }
 
 .sec-head { margin-bottom: 16px; }
-.sec-head .lab { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
 .sec-head h2 { font-size: 1.05rem; font-weight: 600; margin: 3px 0 4px; letter-spacing: -0.01em; }
-.sec-head .api { display: block; font-family: var(--mono); font-size: 0.78rem; color: var(--faint); }
 
 /* ---------- buttons ---------- */
 .btn {
@@ -271,16 +269,6 @@ input[type="checkbox"] { accent-color: var(--ink); width: 15px; height: 15px; }
 .det-bar i { display: block; height: 100%; background: var(--ink); }
 .det-empty { font-family: var(--mono); font-size: 0.76rem; color: var(--faint); }
 
-/* ---------- footer ---------- */
-.site-footer {
-  max-width: 720px; margin-inline: auto; padding: 22px 20px 36px;
-  border-top: 1px solid var(--line); margin-top: 28px;
-  display: flex; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap;
-  font-size: 0.8rem; color: var(--muted);
-}
-.footer-links a { font-family: var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
-.footer-links a:hover { color: var(--ink); }
-
 @media (max-width: 520px) {
   .site-header nav { gap: 0.7rem; }
   .viewer-wrap imgoji-viewer { width: 100%; height: auto; aspect-ratio: 1; }
@@ -322,3 +310,42 @@ imgoji-viewer.drag { outline: 3px solid #1a3f8a; outline-offset: -3px; }
 .server-share .chk { display: block; margin: 0.2rem 0; }
 .server-share .chk input { margin-right: 0.35rem; }
 .server-share .btn { margin-top: 0.4rem; }
+
+/* ---------- public gallery (gallery tab) ---------- */
+/* full-bleed tile grid; the dark viewport tiles match the site's image surfaces so
+   the emoji composites carry the colour, per the monochrome-chrome convention */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  max-width: 1120px; margin-inline: auto;
+}
+.gtile {
+  display: grid; gap: 7px; padding: 0; background: none; border: 0; cursor: pointer; text-align: left;
+}
+.gtile-frame { padding: 6px; outline: 1px solid transparent; outline-offset: 2px; transition: outline-color 0.12s; }
+.gtile imgoji-viewer { display: block; width: 100%; height: auto; aspect-ratio: 1; }
+.gtile-meta { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
+.gtile:hover .gtile-frame { outline-color: var(--ink); }
+.gtile:hover .gtile-meta { color: var(--muted); }
+
+/* shimmering placeholder while the gallery loads */
+.gtile-skel { background: var(--dark); border-radius: var(--radius); aspect-ratio: 1; position: relative; overflow: hidden; }
+.gtile-skel::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(203, 198, 185, 0.10), transparent);
+  transform: translateX(-100%); animation: gskel 1.3s ease-in-out infinite;
+}
+@keyframes gskel { 100% { transform: translateX(100%); } }
+
+/* full-width loading / empty / error message */
+.gallery-msg {
+  grid-column: 1 / -1; display: grid; gap: 10px; justify-items: center;
+  padding: 2rem 1rem; text-align: center; color: var(--muted); font-size: 0.9rem;
+  border: 1px dashed var(--line-2); border-radius: var(--radius); background: var(--surface);
+}
+.gallery-msg p { max-width: 42ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gtile-skel::after { animation: none; opacity: 0.5; }
+}

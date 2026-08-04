@@ -711,9 +711,6 @@ function init() {
   loadFromFragment();   // receive a shared render from the URL fragment on load
   window.addEventListener('hashchange', loadFromFragment);
 
-  // gallery tab: manual refresh pulls new submissions
-  $('galleryRefresh').addEventListener('click', () => loadGallery(true));
-
   // detail slider label
   const detail = $('detail'), detailVal = $('detailVal');
   const updDetail = () => { detailVal.textContent = fmtBytes(LEVELS[parseInt(detail.value, 10) - 1].bytes); };

@@ -41,7 +41,7 @@
   "homepage": "https://nebulous.github.io/imgoji/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nebulous/imgoji.git"
+    "url": "git+https://github.com/nebulous/imgoji.git"
   },
   "bugs": {
     "url": "https://github.com/nebulous/imgoji/issues"

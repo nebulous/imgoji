@@ -10,6 +10,111 @@ approximation of the original image.
 The emoji string is the encoded form. It is compact and transmissible as plain
 text. A decoder renders the referenced glyphs at the regions they encode.
 
+## Usage
+
+The codec ships as importable ES modules with no build step and zero runtime dependencies. The
+**renderer** (string to pixels) and **encoder** (image to string) are separate:
+a page that only displays strings imports `imgoji/render` and pulls in no
+encoder or glyph-atlas code. The public API is JSDoc-annotated in the source.
+Regenerate the API reference (TypeDoc) with `bun run docs:api`.
+
+### Install
+
+From npm (ESM, no build step, zero runtime dependencies):
+
+```sh
+npm install imgoji
+```
+
+Or load it from a CDN. The package is plain ESM with relative imports, so a CDN
+serves it with no transform:
+
+```
+https://esm.sh/imgoji
+https://cdn.jsdelivr.net/npm/imgoji/+esm
+https://unpkg.com/imgoji?module
+```
+
+### Put a viewer on your page
+
+Register the element once, then use it anywhere. The string is the element's
+text content: inline, copyable, and it degrades to plain text without JS.
+
+```html
+<!doctype html>
+<meta charset="utf-8">
+<script type="module" src="https://esm.sh/imgoji"></script>
+
+<imgoji-viewer alpha="0.65" style="width:320px">⬛🌍s4🏔️s8…</imgoji-viewer>
+```
+
+`import 'imgoji'` registers the `<imgoji-viewer>` element as a side effect, so
+the CDN tag above is enough on its own. The same import works from npm
+(`import 'imgoji'`). Import `imgoji/viewer` instead to pull in the viewer
+without the encoder. To self-host, serve `src/` over http(s) and keep
+`viewer.js`, `render.js`, `glyph.js`, and `util.js` in one directory (the
+viewer is an ES module with relative imports).
+
+| attribute  | default | meaning                                                             |
+| ---------- | ------- | ------------------------------------------------------------------- |
+| (text)     |         | the imgoji string (used unless `src` is set)                        |
+| `alpha`    | `0.65`  | per-layer blend weight. Colors drift if it differs from the encoder's `alpha`. |
+| `prefix`   | full    | render only the first fraction `0..1` (the prefix property). `0` is the root glyph |
+| `autoplay` | off     | animate `prefix` from 0 to 1 on render                              |
+| `src`      |         | URL of an `.imgoji` file to fetch (overrides the text content)      |
+
+The `.value` property holds the string. Setting it re-renders.
+
+Size it with CSS like any element (`width`, `height`). The viewer renders to match
+its displayed size and re-renders on resize, so it stays as sharp as the system
+emoji font allows. The codec image is square. A non-square box stretches it,
+which is intended.
+
+### Render (display only)
+
+```js
+import { Renderer } from 'imgoji/render';   // pulls in no encoder code
+
+const r = new Renderer();
+r.decode(string, ctx);                        // codec BFS string onto a 2D context
+r.decode(string, ctx, 256, { prefix: 0.5 });  // render half the stream
+r.decode('🌍r0 🚀x4y2', ctx);          // DSL composition (r0 renders the leading glyph as a picture)
+```
+
+### Encode (image to string)
+
+```js
+import { Encoder } from 'imgoji';
+
+const enc = new Encoder();
+const { string, deflatedBytes, de00 } = await enc.encode(image, {
+  byteTarget: 8192,   // deflated-byte budget (threshold is searched to hit it)
+  alpha: 0.65,        // must match the viewer's alpha
+  seed: '🌍s4',        // optional DSL base layers
+});
+// flat emoji grid for terminals or chat:
+const { grid } = await enc.rasterize(image, { cols: 24, rows: 24 });
+```
+
+`docs/index.html` (served from the project root) is the interactive tool: it
+encodes a chosen image with `Encoder`, renders the string in an
+`<imgoji-viewer>`, and scrubs the prefix to show the progressive property. See
+`FORMAT.md` for the string grammar.
+
+## Running
+
+Serve the repo over http, then open http://localhost:8000/docs/:
+
+    python3 -m http.server 8000
+    bunx serve .
+
+`docs/index.html` is the tool: it encodes an image, decodes any imgoji string
+via `<imgoji-viewer>`, and rasterizes a flat emoji grid for terminals. Serve
+from the repo root (not from `docs/`) so `../src` and `../assets/emoji-list.js`
+resolve. http is required rather than file://, because the encoder loads
+`earth.jpg` and reads its pixels via `getImageData`. A same-origin server keeps
+the canvas untainted.
+
 ## Platform
 
 The codec runs in the browser. JavaScript renders emoji to a canvas using the
@@ -76,20 +181,6 @@ Adding the color-anchor palette drops depth 6 to about 51.
 
 Reference image: `assets/earth.jpg`, 1000x1000.
 
-## Running
-
-Serve the repo over http, then open http://localhost:8000/docs/:
-
-    python3 -m http.server 8000
-    bunx serve .
-
-`docs/index.html` is the tool: it encodes an image, decodes any imgoji string
-via `<imgoji-viewer>`, and rasterizes a flat emoji grid for terminals. Serve
-from the repo root (not from `docs/`) so `../src` and `../assets/emoji-list.js`
-resolve. http is required rather than file://, because the encoder loads
-`earth.jpg` and reads its pixels via `getImageData`. A same-origin server keeps
-the canvas untainted.
-
 ## Short links (optional, self-hosted)
 
 The docs tool can shorten share links through a small URL shortener, so a long
@@ -110,75 +201,3 @@ gallery visibility are yours to decide. Point the docs site at your worker by
 setting `SHORTENER` in `docs/app.js`. With it `''`, the "Short link / public
 gallery" panel reports "shortener not configured" and the rest of the site is
 serverless.
-
-## As a library
-
-The codec ships as importable ES modules in `src/`, with no build step. The
-**renderer** (string to pixels) and **encoder** (image to string) are separate:
-a page that only displays strings imports `imgoji/render` and pulls in no
-encoder or glyph-atlas code. The public API is JSDoc-annotated in the source.
-Regenerate the API reference (TypeDoc) with `bun run docs:api`.
-
-### Put a viewer on your page
-
-Register the element once, then use it anywhere. The string is the element's
-text content: inline, copyable, and it degrades to plain text without JS.
-
-```html
-<!doctype html>
-<meta charset="utf-8">
-<!-- serve viewer.js and its imports (render.js, glyph.js, util.js) over http(s) -->
-<script type="module" src="/imgoji/viewer.js"></script>
-
-<imgoji-viewer alpha="0.65" style="width:320px">⬛🌍s4🏔️s8…</imgoji-viewer>
-```
-
-Loading: `viewer.js` is an ES module with relative imports, so serve the four
-files (`viewer.js`, `render.js`, `glyph.js`, `util.js`) from one directory over
-http(s). The package is not on a CDN or npm yet. Copy the files from `src/`.
-
-| attribute  | default | meaning                                                             |
-| ---------- | ------- | ------------------------------------------------------------------- |
-| (text)     |         | the imgoji string (used unless `src` is set)                        |
-| `alpha`    | `0.65`  | per-layer blend weight. Colors drift if it differs from the encoder's `alpha`. |
-| `prefix`   | full    | render only the first fraction `0..1` (the prefix property). `0` is the root glyph |
-| `autoplay` | off     | animate `prefix` from 0 to 1 on render                              |
-| `src`      |         | URL of an `.imgoji` file to fetch (overrides the text content)      |
-
-The `.value` property holds the string. Setting it re-renders.
-
-Size it with CSS like any element (`width`, `height`). The viewer renders to match
-its displayed size and re-renders on resize, so it stays as sharp as the system
-emoji font allows. The codec image is square. A non-square box stretches it,
-which is intended.
-
-### Render (display only)
-
-```js
-import { Renderer } from 'imgoji/render';   // pulls in no encoder code
-
-const r = new Renderer();
-r.decode(string, ctx);                        // codec BFS string onto a 2D context
-r.decode(string, ctx, 256, { prefix: 0.5 });  // render half the stream
-r.decode('🌍r0 🚀x4y2', ctx);          // DSL composition (r0 renders the leading glyph as a picture)
-```
-
-### Encode (image to string)
-
-```js
-import { Encoder } from 'imgoji';
-
-const enc = new Encoder();
-const { string, deflatedBytes, de00 } = await enc.encode(image, {
-  byteTarget: 8192,   // deflated-byte budget (threshold is searched to hit it)
-  alpha: 0.65,        // must match the viewer's alpha
-  seed: '🌍s4',        // optional DSL base layers
-});
-// flat emoji grid for terminals or chat:
-const { grid } = await enc.rasterize(image, { cols: 24, rows: 24 });
-```
-
-`docs/index.html` (served from the project root) is the interactive tool: it
-encodes a chosen image with `Encoder`, renders the string in an
-`<imgoji-viewer>`, and scrubs the prefix to show the progressive property. See
-`FORMAT.md` for the string grammar.

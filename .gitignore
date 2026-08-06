@@ -21,3 +21,10 @@
 # macOS Finder metadata
 .DS_Store
 
+# Editor swap files
+*.swp
+*.swo
+
+# Local scratch
+/hn.txt
+

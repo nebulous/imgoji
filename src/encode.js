@@ -33,7 +33,6 @@ export class Encoder {
     this._conv = rgbToLab;        // sRGB→matcher-space (set per-encode)
     this.compare = 32;
     this.alpha = 0.65;
-    this.skipBias = 0;
     // scratch canvases (sized to `compare` lazily)
     this._scratch = null; this._sctx = null;
     this._glyphC = null; this._gctx = null;
@@ -312,7 +311,7 @@ export class Encoder {
     return s / n;
   }
   alphaForDepth(d) { return d === 0 ? 1 : this.alpha; }
-  paintsCell(res) { return res.err < res.skip && res.skip > (res.R || this.compare) ** 2 * this.skipBias * this.skipBias; }
+  paintsCell(res) { return res.err < res.skip; }
   // Composite a glyph over the recon at a region (codec alpha blend).
   paintRegion(x, y, size, alpha, emoji) {
     const s = Math.max(1, Math.round(size));
@@ -354,15 +353,15 @@ export class Encoder {
     }
     let skipErr = 0;
     for (let i = 0; i < N; i++) { const o = i * 4; const l = conv(parent[o], parent[o + 1], parent[o + 2]); skipErr += (l[0] - tL[i]) ** 2 + (l[1] - tA[i]) ** 2 + (l[2] - tB[i]) ** 2; }
-    if (!bestPlain) return { emoji: '⬜', err: Infinity, skip: 0, R };
-    return { emoji: bestPlain.emoji, err: plainErr, skip: skipErr, R };
+    if (!bestPlain) return { emoji: '⬜', err: Infinity, skip: 0 };
+    return { emoji: bestPlain.emoji, err: plainErr, skip: skipErr };
   }
 
   // ---- tree growth + prune ----------------------------------------------
   async growFullTree(maxDepth, seedStr = '', detailGate = 0) {
     this._ensureScratch(); this._ensureRecon();
     const C = this.compare;
-    const key = this._sourceSig + '|' + maxDepth + '|' + C + '|' + this.alpha + '|' + (seedStr) + '|' + this.skipBias + '|' + detailGate + '|' + this.metric;
+    const key = this._sourceSig + '|' + maxDepth + '|' + C + '|' + this.alpha + '|' + (seedStr) + '|' + detailGate + '|' + this.metric;
     if (this.bfosCache.key === key) return this.bfosCache;
     const seedTokens = splitGraphemes(rleExpand(seedStr)).filter(t => t !== ' ');
     let seedDsl = ''; const seedPins = []; let seeded = 0;
@@ -548,7 +547,6 @@ export class Encoder {
    * @param {number} [opts.depth=6] max quadtree depth (8 = one pixel per cell at 256²).
    * @param {number} [opts.compare=32] comparison/match resolution.
    * @param {number} [opts.detailGate=0] Sobel gate; cells below it stay leaves.
-   * @param {number} [opts.skipBias=0] paint-vs-background-skip bias.
    * @param {number} [opts.bilateral] edge-preserving smoothing sigmaR applied to the match target.
    * @param {'cielab'|'oklab'} [opts.metric='cielab'] matcher color space.
    * @param {string} [opts.seed] DSL seed string (base-layer sprites / anchor pins).
@@ -557,7 +555,6 @@ export class Encoder {
   async encode(source, opts = {}) {
     this.compare = Math.max(4, opts.compare || 32);
     this.alpha = opts.alpha ?? 0.65;
-    this.skipBias = opts.skipBias ?? 0;
     this.metric = opts.metric === 'oklab' ? 'oklab' : 'cielab';
     this._conv = this.metric === 'oklab' ? rgbToOklab : rgbToLab;
     this._ensureScratch();

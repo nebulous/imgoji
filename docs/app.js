@@ -37,13 +37,12 @@ const LEVELS = [
   { bytes: 32768, depth: 8 },
   { bytes: 65536, depth: 8 },
 ];
-const ADV_DEFAULTS = { alpha: 1, compare: 32, threshold: 0, detailGate: 0, skipBias: 0, bilateral: true, bilateralR: 32 };
+const ADV_DEFAULTS = { alpha: 1, compare: 32, threshold: 0, detailGate: 0, bilateral: true, bilateralR: 32 };
 const readAdv = () => ({
   alpha: parseFloat($('advAlpha').value),
   compare: parseInt($('advCompare').value, 10),
   threshold: parseInt($('advThreshold').value, 10),
   detailGate: parseFloat($('advDetailGate').value),
-  skipBias: parseFloat($('advSkipBias').value),
   bilateral: $('advBilateral').checked ? parseFloat($('advBilateralR').value) : undefined,
 });
 
@@ -232,7 +231,7 @@ async function doEncode() {
         depth: lv.depth, byteTarget: lv.bytes, seed,
         alpha: a.alpha, compare: a.compare,
         threshold: a.threshold > 0 ? a.threshold : undefined,   // 0 = let byteTarget choose
-        skipBias: a.skipBias, detailGate: a.detailGate,
+        detailGate: a.detailGate,
         bilateral: a.bilateral,                                 // edge-preserving smoothing
       });
     });
@@ -726,7 +725,6 @@ function init() {
   advVal('advAlpha', 'advAlphaVal', (v) => parseFloat(v).toFixed(2));
   advVal('advThreshold', 'advThresholdVal', (v) => (v === '0' ? 'auto' : v));
   advVal('advDetailGate', 'advDetailGateVal', (v) => v);
-  advVal('advSkipBias', 'advSkipBiasVal', (v) => v);
   advVal('advBilateralR', 'advBilateralRVal', (v) => v);
   $('advBilateral').addEventListener('change', refreshPreview);
   $('advBilateralR').addEventListener('input', schedulePreviewFilter);
@@ -735,10 +733,9 @@ function init() {
     $('advCompare').value = ADV_DEFAULTS.compare;
     $('advThreshold').value = ADV_DEFAULTS.threshold;
     $('advDetailGate').value = ADV_DEFAULTS.detailGate;
-    $('advSkipBias').value = ADV_DEFAULTS.skipBias;
     $('advBilateral').checked = ADV_DEFAULTS.bilateral;
     $('advBilateralR').value = ADV_DEFAULTS.bilateralR;
-    ['advAlpha', 'advThreshold', 'advDetailGate', 'advSkipBias', 'advBilateralR'].forEach((id) => $(id).dispatchEvent(new Event('input')));
+    ['advAlpha', 'advThreshold', 'advDetailGate', 'advBilateralR'].forEach((id) => $(id).dispatchEvent(new Event('input')));
   });
 
   // buttons

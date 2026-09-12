@@ -561,7 +561,13 @@ improvement at 1.7&times; encode time, confirming the ceiling.</p>
 to different pixels on another (Apple, Google, Noto). This is the format's
 premise, not a defect: the affordance it exploits is that every device ships the
 glyph set, so referencing glyphs by codepoint needs zero asset distribution.
-Encode and decode stay self-consistent within a single browser session.</p>
+Encode and decode stay self-consistent within a single browser session.
+All development, testing, and measurements in this paper ran in Chromium on
+macOS with Apple's emoji font (Apple Color Emoji), so absolute numbers (RMS,
+&Delta;E00, palette statistics such as Figure 5's hue counts) reflect Apple's
+glyph designs. Within-font rankings (BFOS over greedy, CIE76 over OKLab)
+compare encoders under one font and should transfer. Absolute numbers will
+differ on other platforms' fonts.</p>
 </section>
 
 <section>
